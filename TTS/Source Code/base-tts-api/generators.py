@@ -64,9 +64,7 @@ class TTSGenerator:
                 )
         return synthesizers
 
-    async def do_tts(self, text: str, tmp_file: str, model: str = None):
-        if model is None:
-            model = "male1-online"
+    async def do_tts(self, text: str, tmp_file: str, model: str = "male1-online"):
         if model == "male1-online":
             voice = "fa-IR-FaridNeural"
             try:
