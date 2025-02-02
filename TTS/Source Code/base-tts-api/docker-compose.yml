@@ -1,0 +1,29 @@
+version: '3.7'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+      - PIP_INDEX_URL
+      - PIP_EXTRA_INDEX_URL
+      - PIP_TRUSTED_HOST
+      - PIP_TIMEOUT
+    command: bash ./cmd.sh
+    ports:
+    - ${PORT_BACKEND}:8000
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - ./src:/approot/src
+    - ../../Models:/approot/models
+    - ./data:/approot/data
+    environment:
+    - BASE_TIMEZONE=Asia/Tehran
+    user: ${CUID}
+    restart: always
+    image: robin-tts:0.0.1
+    networks:
+      robinnet: null
+networks:
+  robinnet:
+    driver: bridge

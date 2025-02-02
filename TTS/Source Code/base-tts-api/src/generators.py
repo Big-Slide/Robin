@@ -7,30 +7,36 @@ from TTS.utils.synthesizer import Synthesizer
 from typing import List, Dict
 from starlette import status as status_code
 
+
+if os.environ.get("MODE", "dev") == "prod":
+    models_dir = "/approot/models"
+else:
+    models_dir = "../../Models"
+
 models = {
     "1": {  # ~Bad
-        "model_path": "../../Models/karim23657/persian-tts-female-GPTInformal-Persian-vits/best_model_98066.pth",
-        "config_path": "../../Models/karim23657/persian-tts-female-GPTInformal-Persian-vits/config.json",
+        "model_path": f"{models_dir}/karim23657/persian-tts-female-GPTInformal-Persian-vits/best_model_98066.pth",
+        "config_path": f"{models_dir}/karim23657/persian-tts-female-GPTInformal-Persian-vits/config.json",
     },
     "2": {  # Afghanistan
-        "model_path": "../../Models/Kamtera/persian-tts-female-glow_tts/best_model.pth",
-        "config_path": "../../Models/Kamtera/persian-tts-female-glow_tts/config.json",
+        "model_path": f"{models_dir}/Kamtera/persian-tts-female-glow_tts/best_model.pth",
+        "config_path": f"{models_dir}/Kamtera/persian-tts-female-glow_tts/config.json",
     },
     "3": {  # Afghanistan
-        "model_path": "../../Models/Kamtera/persian-tts-female-vits/best_model_30824.pth",
-        "config_path": "../../Models/Kamtera/persian-tts-female-vits/config.json",
+        "model_path": f"{models_dir}/Kamtera/persian-tts-female-vits/best_model_30824.pth",
+        "config_path": f"{models_dir}/Kamtera/persian-tts-female-vits/config.json",
     },
     "female1": {  # Good
-        "model_path": "../../Models/Kamtera/persian-tts-female1-vits/best_model_97741.pth",
-        "config_path": "../../Models/Kamtera/persian-tts-female1-vits/config.json",
+        "model_path": f"{models_dir}/Kamtera/persian-tts-female1-vits/best_model_97741.pth",
+        "config_path": f"{models_dir}/Kamtera/persian-tts-female1-vits/config.json",
     },
     "male1": {  # Mid
-        "model_path": "../../Models/Kamtera/persian-tts-male1-vits/best_model_199921.pth",
-        "config_path": "../../Models/Kamtera/persian-tts-male1-vits/config.json",
+        "model_path": f"{models_dir}/Kamtera/persian-tts-male1-vits/best_model_199921.pth",
+        "config_path": f"{models_dir}/Kamtera/persian-tts-male1-vits/config.json",
     },
     "6": {  # Bad
-        "model_path": "../../Models/Kamtera/persian-tts-female-tacotron2/best_model_305416.pth",
-        "config_path": "../../Models/Kamtera/persian-tts-female-tacotron2/config.json",
+        "model_path": f"{models_dir}/Kamtera/persian-tts-female-tacotron2/best_model_305416.pth",
+        "config_path": f"{models_dir}/Kamtera/persian-tts-female-tacotron2/config.json",
     },
 }
 
