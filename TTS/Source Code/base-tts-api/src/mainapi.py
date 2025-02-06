@@ -5,7 +5,6 @@ from functools import wraps
 from generators import TTSGenerator
 from fastapi import Depends
 
-
 app = FastAPI()
 tts_generator = TTSGenerator()
 

@@ -3,9 +3,11 @@ import tempfile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi import BackgroundTasks
 import os
-from TTS.utils.synthesizer import Synthesizer
 from typing import List, Dict
 from starlette import status as status_code
+
+os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
+from TTS.utils.synthesizer import Synthesizer
 
 
 if os.environ.get("MODE", "dev") == "prod":
@@ -62,6 +64,7 @@ class TTSGenerator:
             config_path = models[model_id]["config_path"]
             model_path = models[model_id]["model_path"]
             if os.path.exists(config_path) and os.path.exists(model_path):
+                print(f"Loading model ({model_id}) ...")
                 synthesizers[model_id] = Synthesizer(model_path, config_path)
                 print(f"Model {model_id} loaded from {model_path}")
             else:
@@ -70,7 +73,9 @@ class TTSGenerator:
                 )
         return synthesizers
 
-    async def do_tts(self, text: str, tmp_file: str, model: str = "male1-online"):
+    async def do_tts(self, text: str, tmp_file: str, model: str = None):
+        if model is None:
+            model = "male1-online"
         if model == "male1-online":
             voice = "fa-IR-FaridNeural"
             try:

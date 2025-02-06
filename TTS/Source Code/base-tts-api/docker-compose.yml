@@ -8,7 +8,7 @@ services:
       - PIP_INDEX_URL
       - PIP_EXTRA_INDEX_URL
       - PIP_TRUSTED_HOST
-      - PIP_TIMEOUT
+      - PIP_TIMEOUT=500
     command: bash ./cmd.sh
     ports:
     - ${PORT_BACKEND}:8000
@@ -18,7 +18,9 @@ services:
     - ../../Models:/approot/models
     - ./data:/approot/data
     environment:
-    - BASE_TIMEZONE=Asia/Tehran
+    - TZ=Asia/Tehran
+    - MPLCONFIGDIR=/tmp/matplotlib
+    - MODE
     user: ${CUID}
     restart: always
     image: robin-tts:0.0.1
