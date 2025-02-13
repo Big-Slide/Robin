@@ -1,10 +1,10 @@
 import edge_tts
-import tempfile
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi import BackgroundTasks
 import os
 from typing import List, Dict
-from starlette import status as status_code
+# import tempfile
+# from fastapi.responses import FileResponse, JSONResponse
+# from fastapi import BackgroundTasks
+# from starlette import status as status_code
 
 os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
 from TTS.utils.synthesizer import Synthesizer
@@ -51,12 +51,12 @@ class TTSGenerator:
         if os.path.exists(file_path):
             os.remove(file_path)
 
-    async def get_temp_file(self, background_tasks: BackgroundTasks):
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-        try:
-            yield tmp.name
-        finally:
-            background_tasks.add_task(self.delete_file_after_response, tmp.name)
+    # async def get_temp_file(self, background_tasks: BackgroundTasks):
+    #     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+    #     try:
+    #         yield tmp.name
+    #     finally:
+    #         background_tasks.add_task(self.delete_file_after_response, tmp.name)
 
     def load_models(self, model_ids: List[str]) -> Dict:
         synthesizers = {}
@@ -73,33 +73,37 @@ class TTSGenerator:
                 )
         return synthesizers
 
-    async def do_tts(self, text: str, tmp_file: str, model: str = None):
+    async def do_tts(self, text: str, tmp_path: str, model: str = None):
         if model is None:
             model = "male1-online"
         if model == "male1-online":
             voice = "fa-IR-FaridNeural"
             try:
                 communicate = edge_tts.Communicate(text, voice)
-                communicate.save_sync(tmp_file)
-                return FileResponse(path=tmp_file, media_type="audio/wav")
+                communicate.save_sync(tmp_path)
+                # return FileResponse(path=tmp_path, media_type="audio/wav")
             except Exception as e:
                 print(e.args)
+                raise Exception(e)
         elif model == "female1":
             try:
                 wavs = self.synthesizers["female1"].tts(text)
-                self.synthesizers["female1"].save_wav(wavs, tmp_file)
-                return FileResponse(path=tmp_file, media_type="audio/wav")
+                self.synthesizers["female1"].save_wav(wavs, tmp_path)
+                # return FileResponse(path=tmp_path, media_type="audio/wav")
             except Exception as e:
                 print(e.args)
+                raise Exception(e)
         elif model == "male1":
             try:
                 wavs = self.synthesizers["male1"].tts(text)
-                self.synthesizers["male1"].save_wav(wavs, tmp_file)
-                return FileResponse(path=tmp_file, media_type="audio/wav")
+                self.synthesizers["male1"].save_wav(wavs, tmp_path)
+                # return FileResponse(path=tmp_path, media_type="audio/wav")
             except Exception as e:
                 print(e.args)
+                raise Exception(e)
         else:
-            return JSONResponse(
-                status_code=status_code.HTTP_412_PRECONDITION_FAILED,
-                content={"details": "Model not found"},
-            )
+            raise AssertionError("Model not found")
+            # return JSONResponse(
+            #     status_code=status_code.HTTP_412_PRECONDITION_FAILED,
+            #     content={"details": "Model not found"},
+            # )

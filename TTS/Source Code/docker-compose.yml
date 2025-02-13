@@ -1,0 +1,65 @@
+version: '3.7'
+services:
+  queue:
+    image: rabbitmq:4.0.6
+    ports:
+      - 5672:5672
+      - 15672:15672
+    restart: always
+    networks:
+      robinnet: null
+  engine:
+    build:
+      context: ./engine
+      dockerfile: ./Dockerfile
+      args:
+        - PIP_INDEX_URL
+        - PIP_EXTRA_INDEX_URL
+        - PIP_TRUSTED_HOST
+        - PIP_TIMEOUT=500
+    command: bash ./cmd.sh
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./src/engine:/approot/src
+      - ../Models:/approot/models
+      - ./data:/approot/data
+    environment:
+      - TZ=Asia/Tehran
+      - MPLCONFIGDIR=/tmp/matplotlib
+      - MODE
+    user: ${CUID}
+    restart: always
+    depends_on:
+      - queue
+    image: robin-tts-engine:0.0.2
+    networks:
+      robinnet: null
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile
+      args:
+        - PIP_INDEX_URL
+        - PIP_EXTRA_INDEX_URL
+        - PIP_TRUSTED_HOST
+        - PIP_TIMEOUT=500
+    command: bash ./cmd.sh
+    ports:
+      - ${PORT_BACKEND}:8000
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./src/backend:/approot/src
+      - ../Outputs:/approot/data
+    environment:
+      - TZ=Asia/Tehran
+      - MODE
+    user: ${CUID}
+    restart: always
+    depends_on:
+      - queue
+    image: robin-tts-backend:0.0.2
+    networks:
+      robinnet: null    
+networks:
+  robinnet:
+    driver: bridge
