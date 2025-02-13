@@ -1,7 +1,3 @@
-from generators import TTSGenerator
-import aio_pika
-import asyncio
-import json
 import os
 from loguru import logger
 from version import __version__
@@ -24,7 +20,12 @@ logger.add(
     serialize=False,
 )
 
-logger.info("Starting service", version=__version__)
+logger.info("Starting service...", version=__version__)
+
+from generators import TTSGenerator
+import aio_pika
+import asyncio
+import json
 
 
 async def process_message(

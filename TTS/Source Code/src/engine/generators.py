@@ -1,12 +1,13 @@
+from loguru import logger
 import edge_tts
 import os
 from typing import List, Dict
-from loguru import logger
 # import tempfile
 # from fastapi.responses import FileResponse, JSONResponse
 # from fastapi import BackgroundTasks
 # from starlette import status as status_code
 
+logger.info("Loading synthesizer...")
 os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
 from TTS.utils.synthesizer import Synthesizer
 
@@ -60,6 +61,7 @@ class TTSGenerator:
     #         background_tasks.add_task(self.delete_file_after_response, tmp.name)
 
     def load_models(self, model_ids: List[str]) -> Dict:
+        logger.info(f"Loading {len(model_ids)} model(s)")
         synthesizers = {}
         for model_id in model_ids:
             config_path = models[model_id]["config_path"]
