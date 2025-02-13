@@ -5,12 +5,20 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
+    volumes:
+      - ../Outputs/rabbitmq_logs:/var/log/rabbitmq
+      - ../Outputs/rabbitmq_data:/var/lib/rabbitmq
+      - ./src/rabbitmq/config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    environment:
+      - TZ=Asia/Tehran
+      - RABBITMQ_CONFIG_FILE=/etc/rabbitmq/rabbitmq.conf  # Use the custom config file
+      - RABBITMQ_LOGS=/var/log/rabbitmq/rabbit.log  # Log file location
     restart: always
     networks:
       robinnet: null
   engine:
     build:
-      context: ./engine
+      context: ./src/engine
       dockerfile: ./Dockerfile
       args:
         - PIP_INDEX_URL
@@ -22,7 +30,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./src/engine:/approot/src
       - ../Models:/approot/models
-      - ./data:/approot/data
+      - ../Outputs:/approot/data
     environment:
       - TZ=Asia/Tehran
       - MPLCONFIGDIR=/tmp/matplotlib
@@ -36,7 +44,7 @@ services:
       robinnet: null
   backend:
     build:
-      context: ./backend
+      context: ./src/backend
       dockerfile: ./Dockerfile
       args:
         - PIP_INDEX_URL

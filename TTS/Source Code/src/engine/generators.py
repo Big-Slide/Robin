@@ -78,29 +78,17 @@ class TTSGenerator:
             model = "male1-online"
         if model == "male1-online":
             voice = "fa-IR-FaridNeural"
-            try:
-                communicate = edge_tts.Communicate(text, voice)
-                communicate.save_sync(tmp_path)
-                # return FileResponse(path=tmp_path, media_type="audio/wav")
-            except Exception as e:
-                print(e.args)
-                raise Exception(e)
+            communicate = edge_tts.Communicate(text, voice)
+            communicate.save_sync(tmp_path)
+            # return FileResponse(path=tmp_path, media_type="audio/wav")
         elif model == "female1":
-            try:
-                wavs = self.synthesizers["female1"].tts(text)
-                self.synthesizers["female1"].save_wav(wavs, tmp_path)
-                # return FileResponse(path=tmp_path, media_type="audio/wav")
-            except Exception as e:
-                print(e.args)
-                raise Exception(e)
+            wavs = self.synthesizers["female1"].tts(text)
+            self.synthesizers["female1"].save_wav(wavs, tmp_path)
+            # return FileResponse(path=tmp_path, media_type="audio/wav")
         elif model == "male1":
-            try:
-                wavs = self.synthesizers["male1"].tts(text)
-                self.synthesizers["male1"].save_wav(wavs, tmp_path)
-                # return FileResponse(path=tmp_path, media_type="audio/wav")
-            except Exception as e:
-                print(e.args)
-                raise Exception(e)
+            wavs = self.synthesizers["male1"].tts(text)
+            self.synthesizers["male1"].save_wav(wavs, tmp_path)
+            # return FileResponse(path=tmp_path, media_type="audio/wav")
         else:
             raise AssertionError("Model not found")
             # return JSONResponse(

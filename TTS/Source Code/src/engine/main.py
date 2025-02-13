@@ -26,7 +26,7 @@ async def process_message(
 
             print(f"Processing task {task_id} with model {model}: {text}")
             output_path = f"{OUTPUT_DIR}/{task_id}.wav"
-            tts_generator.do_tts(text=text, model=model, tmp_path=output_path)
+            await tts_generator.do_tts(text=text, model=model, tmp_path=output_path)
 
             result = {
                 "task_id": task_id,
