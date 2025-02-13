@@ -1,6 +1,7 @@
 import edge_tts
 import os
 from typing import List, Dict
+from loguru import logger
 # import tempfile
 # from fastapi.responses import FileResponse, JSONResponse
 # from fastapi import BackgroundTasks
@@ -64,12 +65,14 @@ class TTSGenerator:
             config_path = models[model_id]["config_path"]
             model_path = models[model_id]["model_path"]
             if os.path.exists(config_path) and os.path.exists(model_path):
-                print(f"Loading model ({model_id}) ...")
+                logger.info("Loading model...", model_id=model_id)
                 synthesizers[model_id] = Synthesizer(model_path, config_path)
-                print(f"Model {model_id} loaded from {model_path}")
+                logger.info("Model loaded", model_id=model_id, model_path=model_path)
             else:
-                print(
-                    f"Warning: config or model not found. {config_path=}, {model_path=}"
+                logger.warning(
+                    "Config or model not found",
+                    config_path=config_path,
+                    model_path=model_path,
                 )
         return synthesizers
 

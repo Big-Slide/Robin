@@ -10,6 +10,27 @@ import asyncio
 from messages import Message
 from datetime import datetime
 from fastapi.responses import FileResponse
+from loguru import logger
+import os
+from version import __version__
+
+if os.environ.get("MODE", "dev") == "prod":
+    log_dir = "/approot/data"
+else:
+    log_dir = "../Outputs/result"
+os.makedirs(log_dir, exist_ok=True)
+
+logger.add(
+    f"{log_dir}/backend.log",
+    rotation="50MB",
+    format="{time} | {level} | {message} | {extra}",
+    level="INFO",
+    backtrace=True,
+    colorize=True,
+    serialize=False,
+)
+
+logger.info("Starting service", version=__version__)
 
 
 class GenerateRequest(BaseModel):
@@ -47,7 +68,7 @@ async def consume_results(connection: aio_pika.RobustConnection):
                         tasks[task_id].error = result.get("error")
                         tasks[task_id].utime = datetime.now()
                 except Exception as e:
-                    print(f"Error processing result: {e}")
+                    logger.exception(e)
 
 
 async def get_rabbitmq_connection() -> AsyncGenerator[aio_pika.RobustConnection, None]:
@@ -76,6 +97,7 @@ async def generate_sound(
     request: GenerateRequest,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
 ):
+    logger.info("/tts/generate", request=request)
     task_id = request.task_id
     if task_id is None:
         task_id = str(uuid.uuid4())
@@ -102,6 +124,7 @@ async def generate_sound(
 
 @app.get("/tts/status/{task_id}")
 async def get_status(task_id: str):
+    logger.info("/tts/status", task_id=task_id)
     task = tasks.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -112,6 +135,7 @@ async def get_status(task_id: str):
 
 @app.get("/tts/file/{task_id}")
 async def get_file(task_id: str):
+    logger.info("/tts/file", task_id=task_id)
     task = tasks.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")

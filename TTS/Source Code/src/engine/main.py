@@ -3,12 +3,28 @@ import aio_pika
 import asyncio
 import json
 import os
+from loguru import logger
+from version import __version__
 
 if os.environ.get("MODE", "dev") == "prod":
     OUTPUT_DIR = "/approot/data/result"
+    log_dir = "/approot/data"
 else:
     OUTPUT_DIR = "../Outputs/result"
+    log_dir = "../Outputs/result"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+logger.add(
+    f"{log_dir}/engine.log",
+    rotation="50MB",
+    format="{time} | {level} | {message} | {extra}",
+    level="INFO",
+    backtrace=True,
+    colorize=True,
+    serialize=False,
+)
+
+logger.info("Starting service", version=__version__)
 
 
 async def process_message(
@@ -24,7 +40,7 @@ async def process_message(
             model = message_body["model"]
             task_id = message_body["task_id"]
 
-            print(f"Processing task {task_id} with model {model}: {text}")
+            logger.info("Processing task", task_id=task_id, model=model, text=text)
             output_path = f"{OUTPUT_DIR}/{task_id}.wav"
             await tts_generator.do_tts(text=text, model=model, tmp_path=output_path)
 
@@ -34,6 +50,7 @@ async def process_message(
                 "result_path": str(output_path),
             }
         except Exception as e:
+            logger.exception(e)
             result = {"task_id": task_id, "status": "failed", "error": str(e)}
 
         await result_channel.default_exchange.publish(
