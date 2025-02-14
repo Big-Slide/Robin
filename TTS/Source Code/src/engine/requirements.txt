@@ -1,0 +1,6 @@
+edge_tts==7.0.0
+# fastapi==0.110.1
+# starlette==0.37.2
+# uvicorn==0.29.0
+aio-pika==9.5.4
+loguru==0.7.3
