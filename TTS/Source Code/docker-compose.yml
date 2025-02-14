@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   queue:
-    image: rabbitmq:4.0.6
+    image: rabbitmq:4.0.6-management
     ports:
       - 5672:5672
       - 15672:15672
