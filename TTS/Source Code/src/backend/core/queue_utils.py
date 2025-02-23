@@ -6,7 +6,6 @@ from config.config_handler import config
 from core import webhook_handler
 from sqlalchemy.orm import Session
 from dbutils import crud
-from dbutils.schemas import WebhookStatus
 
 
 async def consume_results(connection: aio_pika.RobustConnection, db: Session):
