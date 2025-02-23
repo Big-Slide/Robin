@@ -6,6 +6,7 @@ from config.config_handler import config
 from core import webhook_handler
 from sqlalchemy.orm import Session
 from dbutils import crud
+from dbutils.schemas import WebhookStatus
 
 
 async def consume_results(connection: aio_pika.RobustConnection, db: Session):
@@ -25,8 +26,12 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                         result=result.get("result_path"),
                         error=result.get("error"),
                     )
-                    # TODO: handle failed state
-                    webhook_handler.set_completed(request_id=request_id)
+                    # TODO: handle in progress state
+                    # TODO: handle retry and status_code in db
+                    if result["status"] == "completed":
+                        webhook_handler.set_completed(request_id=request_id)
+                    elif result["status"] == "failed":
+                        webhook_handler.set_failed(request_id=request_id)
                 except Exception as e:
                     logger.exception(e)
 

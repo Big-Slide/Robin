@@ -47,7 +47,6 @@ def update_request(
     item = (
         db.query(models.Manager).filter(models.Manager.request_id == request_id).first()
     )
-    logger.warning(item)
     if item is None:
         return False
     item.utime = datetime.now(tz=None)
