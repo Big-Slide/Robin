@@ -15,6 +15,7 @@ from version import __version__
 from config.config_handler import config
 from core.utils import consume_results, get_rabbitmq_connection
 from dbutils import schemas
+import sys
 
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
@@ -22,14 +23,27 @@ else:
     log_dir = "../Outputs/result"
 os.makedirs(log_dir, exist_ok=True)
 
+logger.remove()
+logger.add(
+    sys.stderr,
+    format="{time:YYYY-MM-DD hh:mm:ss} | {level} | {message} | {extra}",
+    level=config["CONSOLE_LOG_LEVEL"],
+    backtrace=True,
+    diagnose=True,
+    colorize=True,
+    serialize=False,
+    enqueue=True,
+)
 logger.add(
     f"{log_dir}/backend.log",
     rotation="50MB",
-    format="{time} | {level} | {message} | {extra}",
-    level="INFO",
+    format="{time:YYYY-MM-DD hh:mm:ss} | {level} | {message} | {extra}",
+    level=config["FILE_LOG_LEVEL"],
     backtrace=True,
+    diagnose=False,
     colorize=True,
     serialize=False,
+    enqueue=True,
 )
 
 logger.info("Starting service", version=__version__)

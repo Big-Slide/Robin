@@ -6,6 +6,7 @@ from typing import AsyncGenerator
 from config.config_handler import config
 import uuid
 from typing import Dict
+from core import webhook_handler
 
 
 def generate_uuid():
@@ -27,13 +28,15 @@ async def consume_results(connection: aio_pika.RobustConnection, tasks: Dict):
                         tasks[request_id].result_path = result.get("result_path")
                         tasks[request_id].error = result.get("error")
                         tasks[request_id].utime = datetime.now()
+                        # TODO: handle failed state
+                        webhook_handler.set_completed(request_id=request_id)
                 except Exception as e:
                     logger.exception(e)
 
 
 async def get_rabbitmq_connection() -> AsyncGenerator[aio_pika.RobustConnection, None]:
     """Dependency to get RabbitMQ connection."""
-    connection = await aio_pika.connect_robust(config['QUEUE_CONNECTION'])
+    connection = await aio_pika.connect_robust(config["QUEUE_CONNECTION"])
     try:
         yield connection
     finally:

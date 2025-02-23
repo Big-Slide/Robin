@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
+from enum import Enum
 
 
 class GenerateRequest(BaseModel):
@@ -8,6 +9,13 @@ class GenerateRequest(BaseModel):
     model: str = None
     request_id: str = None
     priority: int = 1
+
+
+class WebhookStatus(Enum):
+    pending = 0
+    in_progress = 1
+    completed = 2
+    failed = 3
 
 
 class TaskStatus(BaseModel):
