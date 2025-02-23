@@ -35,7 +35,7 @@ def add_request(db: Session, **kwargs):
         db.add(item)
         db.commit()
         return Message("fa").INF_SUCCESS()
-    except Exception as e:
+    except Exception:
         logger.opt(exception=True, colors=True).error("Failed to add_request")
         msg = Message("fa").ERR_FAILED_TO_ADD_TO_DB()
         return msg
@@ -58,6 +58,6 @@ def update_request(
     try:
         db.commit()
         return True
-    except Exception as e:
+    except Exception:
         logger.opt(exception=True, colors=True).error("Failed to update_request")
         return False

@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 import aio_pika
 import uuid
 import json
-from typing import Dict
 import asyncio
 from core.messages import Message
 from datetime import datetime
