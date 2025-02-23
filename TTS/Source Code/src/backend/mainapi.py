@@ -31,7 +31,7 @@ os.makedirs(log_dir, exist_ok=True)
 logger.remove()
 logger.add(
     sys.stderr,
-    format="{time:YYYY-MM-DD hh:mm:ss} | {level} | {message} | {extra}",
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message} | {extra}",
     level=config["CONSOLE_LOG_LEVEL"],
     backtrace=True,
     diagnose=True,
@@ -42,7 +42,7 @@ logger.add(
 logger.add(
     f"{log_dir}/backend.log",
     rotation="50MB",
-    format="{time:YYYY-MM-DD hh:mm:ss} | {level} | {message} | {extra}",
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message} | {extra}",
     level=config["FILE_LOG_LEVEL"],
     backtrace=True,
     diagnose=False,
@@ -91,13 +91,15 @@ async def generate_sound(
     request_id = request.request_id
     if request_id is None:
         request_id = str(uuid.uuid4())
-    crud.add_request(
+    response = crud.add_request(
         db=db,
         request_id=request_id,
         text=request.text,
         model=request.model,
         itime=datetime.now(tz=None),
     )
+    if not response["status"]:
+        return response
 
     channel = await connection.channel()
 
