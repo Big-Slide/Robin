@@ -1,23 +1,36 @@
 import os
 from loguru import logger
 from version import __version__
+from config.config_handler import config
+import sys
 
 if os.environ.get("MODE", "dev") == "prod":
-    OUTPUT_DIR = "/approot/data/result"
     log_dir = "/approot/data"
 else:
-    OUTPUT_DIR = "../Outputs/result"
     log_dir = "../Outputs/result"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(log_dir, exist_ok=True)
 
+logger.remove()
+logger.add(
+    sys.stderr,
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message} | {extra}",
+    level=config["CONSOLE_LOG_LEVEL"],
+    backtrace=True,
+    diagnose=True,
+    colorize=True,
+    serialize=False,
+    enqueue=True,
+)
 logger.add(
     f"{log_dir}/engine.log",
     rotation="50MB",
-    format="{time} | {level} | {message} | {extra}",
-    level="INFO",
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message} | {extra}",
+    level=config["FILE_LOG_LEVEL"],
     backtrace=True,
+    diagnose=False,
     colorize=True,
     serialize=False,
+    enqueue=True,
 )
 
 logger.info("Starting service...", version=__version__)
@@ -25,48 +38,12 @@ logger.info("Starting service...", version=__version__)
 from generators import TTSGenerator
 import aio_pika
 import asyncio
-import json
-
-
-async def process_message(
-    message: aio_pika.IncomingMessage,
-    result_channel: aio_pika.Channel,
-    tts_generator: TTSGenerator,
-):
-    async with message.process():
-        try:
-            # Parse the message body
-            message_body = json.loads(message.body.decode())
-            text = message_body["text"]
-            model = message_body["model"]
-            request_id = message_body["request_id"]
-
-            logger.info(
-                "Processing task", request_id=request_id, model=model, text=text
-            )
-            output_path = f"{OUTPUT_DIR}/{request_id}.wav"
-            await tts_generator.do_tts(text=text, model=model, tmp_path=output_path)
-
-            result = {
-                "request_id": request_id,
-                "status": "completed",
-                "result_path": str(output_path),
-            }
-        except Exception as e:
-            logger.exception(e)
-            result = {"request_id": request_id, "status": "failed", "error": str(e)}
-
-        await result_channel.default_exchange.publish(
-            aio_pika.Message(
-                body=json.dumps(result).encode(), headers={"request_id": request_id}
-            ),
-            routing_key="result_queue",
-        )
+from core.queue_utils import process_message
 
 
 async def main():
     tts_generator = TTSGenerator()
-    connection = await aio_pika.connect_robust("amqp://guest:guest@queue/")
+    connection = await aio_pika.connect_robust(config["QUEUE_CONNECTION"])
 
     # Create separate channels for consuming and publishing
     task_channel = await connection.channel()
