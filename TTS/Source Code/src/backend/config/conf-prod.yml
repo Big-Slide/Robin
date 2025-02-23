@@ -1,0 +1,3 @@
+QUEUE_CONNECTION: amqp://guest:guest@queue/
+DB_CONNECTION: sqlite:///approot/data/database/db.sql
+DB_DIR: /approot/data/database
