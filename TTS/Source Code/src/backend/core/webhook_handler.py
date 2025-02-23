@@ -2,7 +2,6 @@ import requests
 from dbutils.schemas import WebhookStatus
 from config.config_handler import config
 from loguru import logger
-import json
 
 
 base_url = f"{config['AIHIVE_ADDR']}/api/Request"
