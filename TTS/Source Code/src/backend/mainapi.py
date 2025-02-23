@@ -41,7 +41,7 @@ tasks: Dict[str, schemas.TaskStatus] = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan to start the result consumer."""
-    connection = await aio_pika.connect_robust(config['QUEUE_CONNECTION'])
+    connection = await aio_pika.connect_robust(config["QUEUE_CONNECTION"])
     asyncio.create_task(consume_results(connection, tasks))
     yield
     await connection.close()
@@ -50,42 +50,46 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.post("/tts/generate")
+@app.post("/aihive-txttosp/api/v1/text-to-speech-offline")
 async def generate_sound(
     request: schemas.GenerateRequest,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
 ):
-    logger.info("/tts/generate", request=request)
-    task_id = request.task_id
-    if task_id is None:
-        task_id = str(uuid.uuid4())
-    tasks[task_id] = schemas.TaskStatus(
-        task_id=task_id, status="pending", itime=datetime.now()
+    logger.info("/tts/text-to-speech-offline", request=request)
+    request_id = request.request_id
+    if request_id is None:
+        request_id = str(uuid.uuid4())
+    tasks[request_id] = schemas.TaskStatus(
+        request_id=request_id, status="pending", itime=datetime.now()
     )
 
     channel = await connection.channel()
 
-    # Prepare message with text, model, and task_id
-    message_body = {"text": request.text, "model": request.model, "task_id": task_id}
+    # Prepare message with text, model, and request_id
+    message_body = {
+        "text": request.text,
+        "model": request.model,
+        "request_id": request_id,
+    }
 
     await channel.default_exchange.publish(
         aio_pika.Message(
             body=json.dumps(message_body).encode(),
-            headers={"task_id": task_id},
+            headers={"request_id": request_id},
         ),
         routing_key="task_queue",
     )
     await channel.close()
 
     msg = Message("fa").INF_SUCCESS()
-    msg["data"] = {"task_id": task_id}
+    msg["data"] = {"request_id": request_id}
     return msg
 
 
-@app.get("/tts/status/{task_id}")
-async def get_status(task_id: str):
-    logger.info("/tts/status", task_id=task_id)
-    task = tasks.get(task_id)
+@app.get("/aihive-txttosp/api/v1/status/{request_id}")
+async def get_status(request_id: str):
+    logger.info("/tts/status", request_id=request_id)
+    task = tasks.get(request_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     msg = Message("fa").INF_SUCCESS()
@@ -93,10 +97,10 @@ async def get_status(task_id: str):
     return msg
 
 
-@app.get("/tts/file/{task_id}")
-async def get_file(task_id: str):
-    logger.info("/tts/file", task_id=task_id)
-    task = tasks.get(task_id)
+@app.get("/aihive-txttosp/api/v1/file/{request_id}")
+async def get_file(request_id: str):
+    logger.info("/tts/file", request_id=request_id)
+    task = tasks.get(request_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     if task.status == "completed" and task.result_path is not None:

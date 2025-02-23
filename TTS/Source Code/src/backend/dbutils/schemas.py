@@ -6,12 +6,12 @@ from datetime import datetime
 class GenerateRequest(BaseModel):
     text: str
     model: str = None
-    task_id: str = None
+    request_id: str = None
     priority: int = 1
 
 
 class TaskStatus(BaseModel):
-    task_id: str
+    request_id: str
     status: str  # "pending", "processing", "completed", "failed"
     itime: datetime
     utime: Optional[datetime] = None

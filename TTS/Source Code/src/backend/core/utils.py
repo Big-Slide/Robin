@@ -21,12 +21,12 @@ async def consume_results(connection: aio_pika.RobustConnection, tasks: Dict):
             async with message.process():
                 try:
                     result = json.loads(message.body.decode())
-                    task_id = result["task_id"]
-                    if task_id in tasks:
-                        tasks[task_id].status = result["status"]
-                        tasks[task_id].result_path = result.get("result_path")
-                        tasks[task_id].error = result.get("error")
-                        tasks[task_id].utime = datetime.now()
+                    request_id = result["request_id"]
+                    if request_id in tasks:
+                        tasks[request_id].status = result["status"]
+                        tasks[request_id].result_path = result.get("result_path")
+                        tasks[request_id].error = result.get("error")
+                        tasks[request_id].utime = datetime.now()
                 except Exception as e:
                     logger.exception(e)
 

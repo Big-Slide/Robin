@@ -39,24 +39,26 @@ async def process_message(
             message_body = json.loads(message.body.decode())
             text = message_body["text"]
             model = message_body["model"]
-            task_id = message_body["task_id"]
+            request_id = message_body["request_id"]
 
-            logger.info("Processing task", task_id=task_id, model=model, text=text)
-            output_path = f"{OUTPUT_DIR}/{task_id}.wav"
+            logger.info(
+                "Processing task", request_id=request_id, model=model, text=text
+            )
+            output_path = f"{OUTPUT_DIR}/{request_id}.wav"
             await tts_generator.do_tts(text=text, model=model, tmp_path=output_path)
 
             result = {
-                "task_id": task_id,
+                "request_id": request_id,
                 "status": "completed",
                 "result_path": str(output_path),
             }
         except Exception as e:
             logger.exception(e)
-            result = {"task_id": task_id, "status": "failed", "error": str(e)}
+            result = {"request_id": request_id, "status": "failed", "error": str(e)}
 
         await result_channel.default_exchange.publish(
             aio_pika.Message(
-                body=json.dumps(result).encode(), headers={"task_id": task_id}
+                body=json.dumps(result).encode(), headers={"request_id": request_id}
             ),
             routing_key="result_queue",
         )
