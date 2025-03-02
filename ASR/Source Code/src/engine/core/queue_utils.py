@@ -1,4 +1,4 @@
-from generators import TTSGenerator
+from generators import ASRGenerator
 import aio_pika
 import json
 from loguru import logger
@@ -14,26 +14,26 @@ os.makedirs(output_dir, exist_ok=True)
 async def process_message(
     message: aio_pika.IncomingMessage,
     result_channel: aio_pika.Channel,
-    tts_generator: TTSGenerator,
+    asr_generator: ASRGenerator,
 ):
     async with message.process():
         try:
             # Parse the message body
             message_body = json.loads(message.body.decode())
-            text = message_body["text"]
-            model = message_body["model"]
+            input_path = message_body["input_path"]
             request_id = message_body["request_id"]
 
             logger.info(
-                "Processing task", request_id=request_id, model=model, text=text
+                "Processing task",
+                request_id=request_id,
+                input_path=input_path,
             )
-            output_path = f"{output_dir}/{request_id}.wav"
-            await tts_generator.do_tts(text=text, model=model, tmp_path=output_path)
+            text = await asr_generator.do_asr(input_path)
 
             result = {
                 "request_id": request_id,
                 "status": "completed",
-                "result_path": str(output_path),
+                "text": text,
             }
         except Exception as e:
             logger.exception(e)

@@ -10,7 +10,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 RUN python -m pip install --upgrade pip
 
-RUN python -m pip install torch --index-url https://download.pytorch.org/whl/cu118 --timeout $PIP_TIMEOUT
+RUN python -m pip install torch --index-url https://download.pytorch.org/whl/cu126 --timeout $PIP_TIMEOUT
 
 ADD ./requirements.txt /srv/
 RUN python -m pip install --timeout $PIP_TIMEOUT -r /srv/requirements.txt
