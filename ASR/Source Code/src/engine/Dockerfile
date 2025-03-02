@@ -1,0 +1,18 @@
+FROM --platform=linux/amd64 python:3.10-slim-bookworm
+
+ENV LANG C.UTF-8
+ARG PIP_TIMEOUT=500
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive \
+    && apt-get install -y curl dnsutils libaio1 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+RUN python -m pip install --upgrade pip
+
+RUN python -m pip install torch==2.5.1+cu124 --index-url https://download.pytorch.org/whl/cu124 --timeout $PIP_TIMEOUT
+
+ADD ./requirements.txt /srv/
+RUN python -m pip install --timeout $PIP_TIMEOUT -r /srv/requirements.txt
+
+WORKDIR /approot/src
