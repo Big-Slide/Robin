@@ -30,7 +30,7 @@ services:
         PIP_NO_BINARY: ":all:"
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./engine:/approot/final
+      - ./engine:/approot/Final
       - ../Models:/approot/models
       - ../Outputs:/approot/data
     environment:
