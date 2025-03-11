@@ -21,16 +21,17 @@ RUN python -m pip install --upgrade pip
 COPY requirements.txt /srv/requirements.txt
 
 # Install Python dependencies one by one with --no-deps to avoid hash verification
-RUN pip install --no-cache-dir --no-deps --ignore-installed numpy>=1.21.0 && \
-    pip install --no-cache-dir --no-deps --ignore-installed opencv-python-headless==4.8.1.78 && \
-    pip install --no-cache-dir --no-deps --ignore-installed keras==2.13.1 && \
-    pip install --no-cache-dir --no-deps --ignore-installed tensorflow==2.13.0 && \
-    pip install --no-cache-dir --no-deps --ignore-installed mediapipe==0.10.5 && \
-    pip install --no-cache-dir --no-deps --ignore-installed pika==1.3.1 && \
-    pip install --no-cache-dir --no-deps --ignore-installed python-multipart>=0.0.5 && \
-    pip install --no-cache-dir --no-deps --ignore-installed pydantic>=1.8.0 && \
-    pip install --no-cache-dir --no-deps --ignore-installed python-jose>=3.3.0 && \
-    pip install --no-cache-dir --no-deps --ignore-installed python-dotenv>=0.19.0
+RUN pip install --no-cache-dir --disable-pip-version-check --no-deps \
+    pika==1.2.0 \
+    python-multipart==0.0.5 \
+    pydantic==1.8.0 \
+    numpy==1.21.0 \
+    opencv-python==4.5.0 \
+    tensorflow==2.8.0 \
+    keras==2.8.0 \
+    mediapipe==0.8.9 \
+    python-jose==3.3.0 \
+    python-dotenv==0.19.0
 
 # Copy current directory contents into container
 COPY . .
