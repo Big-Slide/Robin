@@ -33,8 +33,7 @@ RUN pip install --no-cache-dir --disable-pip-version-check --no-deps \
     python-jose==3.3.0 \
     python-dotenv==0.19.0
 
-# Copy current directory contents into container
-COPY . .
+
 
 # Set the line endings to LF
 RUN find . -type f -name "*.py" -exec sed -i 's/\r$//' {} +
