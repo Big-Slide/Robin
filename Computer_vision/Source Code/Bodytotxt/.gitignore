@@ -13,3 +13,4 @@ engine/model/yolo11s.pt
 *.tflite
 *.bin
 *.caffemodel
+*.csv
