@@ -8,7 +8,7 @@ from model import KeyPointClassifier
 
 
 # =================== Load Gender Classification Model ===================
-genderModelPath = 'genderModel_VGG16.hdf5'
+genderModelPath = 'model/genderModel_VGG16.hdf5'
 genderClassifier = load_model(genderModelPath, compile=False)
 genderTargetSize = genderClassifier.input_shape[1:3]
 
@@ -23,7 +23,7 @@ with open('model/keypoint_classifier/keypoint_classifier_label.csv', encoding='u
     keypoint_classifier_labels = [row[0] for row in csv.reader(f)]
 
 # =================== Load Face Detection Model (DNN) ===================
-modelFile = "res10_300x300_ssd_iter_140000.caffemodel"
+modelFile = "model/res10_300x300_ssd_iter_140000.caffemodel"
 configFile = "deploy.prototxt"
 faceNet = cv2.dnn.readNetFromCaffe(configFile, modelFile)
 
