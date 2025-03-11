@@ -1,0 +1,7 @@
+AIHIVE_ADDR: http://api.robin-co.com
+BASE_URL_FILE_LINK: http://localhost:11000
+CONSOLE_LOG_LEVEL: INFO
+DB_CONNECTION: sqlite:///../../Outputs/database/db.sql
+DB_DIR: ../../Outputs/database
+FILE_LOG_LEVEL: INFO
+QUEUE_CONNECTION: amqp://guest:guest@localhost/
