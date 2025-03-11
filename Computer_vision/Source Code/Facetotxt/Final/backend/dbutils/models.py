@@ -51,4 +51,3 @@ class Manager(Base):
 
     # Additional information
     descr = Column(String(255), nullable=True)
-    language = Column(String(10), nullable=True, default="en")  # UI language preference
