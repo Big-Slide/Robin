@@ -12,3 +12,4 @@ engine/model/keypoint_classifier/keypoint.csv
 *.pb
 *.tflite
 *.bin
+*.caffemod
