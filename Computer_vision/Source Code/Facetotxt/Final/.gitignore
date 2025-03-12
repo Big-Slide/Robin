@@ -1,6 +1,9 @@
 # Large model files
 engine/model/genderModel_VGG16.hdf5
 engine/model/keypoint_classifier/keypoint.csv
+.idea/
+
+
 
 # General large files
 *.hdf5

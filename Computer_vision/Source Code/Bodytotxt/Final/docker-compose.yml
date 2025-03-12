@@ -52,6 +52,8 @@ services:
         PIP_EXTRA_INDEX_URL: ${PIP_EXTRA_INDEX_URL}
         PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST}
         PIP_TIMEOUT: 500
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./backend:/app/backend
@@ -65,6 +67,7 @@ services:
       - engine
     networks:
       robinnet: null
+    command: bash ./cmd.sh
 
 networks:
   robinnet:
