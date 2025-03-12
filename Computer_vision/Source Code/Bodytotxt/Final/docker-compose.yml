@@ -2,8 +2,8 @@ services:
   queue:
     image: rabbitmq:4.0.6-management
     ports:
-      - ${RABBITMQ_PORT}:5672
-      - ${RABBITMQ_MANAGEMENT_PORT}:15672
+      - ${RABBITMQ_PORT:-5672}:5672
+      - ${RABBITMQ_MANAGEMENT_PORT:-15672}:15672
     volumes:
       - ../Outputs/rabbitmq_logs:/var/log/rabbitmq
       - ../Outputs/rabbitmq_data:/var/lib/rabbitmq
@@ -67,7 +67,8 @@ services:
       - engine
     networks:
       robinnet: null
-      
+    command: bash ./cmd.sh
+
 networks:
   robinnet:
     driver: bridge
