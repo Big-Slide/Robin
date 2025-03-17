@@ -25,7 +25,7 @@ def get_file(db: Session, request_id: str):
 
 def set_inprogress(request_id: str) -> bool:
     url = base_url + f"/{request_id}"
-    params = {"status": WebhookStatus.in_progress.value}
+    params = {"status": WebhookStatus.in_progress.value, "output": "{}"}
     headers = {"Accept": "*/*"}
     response = requests.put(url, params=params, headers=headers)
     # response.raise_for_status()
@@ -47,7 +47,7 @@ def set_inprogress(request_id: str) -> bool:
 
 def set_completed(db: Session, request_id: str) -> bool:
     url = base_url + f"/{request_id}"
-    params = {"status": WebhookStatus.completed.value}
+    params = {"status": WebhookStatus.completed.value, "output": "{}"}
     headers = {"Accept": "*/*"}
     response = requests.put(
         url,
@@ -74,7 +74,7 @@ def set_completed(db: Session, request_id: str) -> bool:
 
 def set_failed(request_id: str) -> bool:
     url = base_url + f"/{request_id}"
-    params = {"status": WebhookStatus.failed.value}
+    params = {"status": WebhookStatus.failed.value, "output": "{}"}
     headers = {"Accept": "*/*"}
     response = requests.put(url, params=params, headers=headers)
     # response.raise_for_status()
