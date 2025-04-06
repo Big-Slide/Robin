@@ -36,25 +36,24 @@ def add_request(db: Session, **kwargs):
     try:
         db.add(item)
         db.commit()
-        return Message("fa").INF_SUCCESS()
+        return Message("en").INF_SUCCESS()
     except IntegrityError as e:
         if "UNIQUE constraint failed: facetotxt_manager.request_id" in str(e.args):
             msg = Message("fa").ERR_DUPLICATE_REQUEST_ID()
             return msg
         else:
             logger.opt(exception=True).error("Failed to add_request")
-            msg = Message("fa").ERR_FAILED_TO_ADD_TO_DB()
+            msg = Message("en").ERR_FAILED_TO_ADD_TO_DB()
             return msg
     except Exception:
         logger.opt(exception=True).error("Failed to add_request")
-        msg = Message("fa").ERR_FAILED_TO_ADD_TO_DB()
+        msg = Message("en").ERR_FAILED_TO_ADD_TO_DB()
         return msg
 
 
 def update_request(
     db: Session, request_id: str, status: WebhookStatus, result: Dict, error: str = None
 ):
-    logger.info("step1 crud")
     item = (
         db.query(models.Manager).filter(models.Manager.request_id == request_id).first()
     )
