@@ -13,7 +13,7 @@ import os
 from version import __version__
 from config.config_handler import config
 from core.queue_utils import consume_results, get_rabbitmq_connection
-from dbutils import schemas, crud
+from dbutils import crud
 import sys
 from starlette.middleware.cors import CORSMiddleware
 from core import base
@@ -105,6 +105,7 @@ async def generate_sound(
     channel = await connection.channel()
 
     # Prepare message with text, model, and request_id
+    # TODO: change input_path to binary data
     message_body = {
         "input_path": audio_path,
         "request_id": request_id,
