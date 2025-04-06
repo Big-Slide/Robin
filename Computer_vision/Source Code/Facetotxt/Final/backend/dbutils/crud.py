@@ -59,19 +59,15 @@ def update_request(
         db.query(models.Manager).filter(models.Manager.request_id == request_id).first()
     )
     if item is None:
-        logger.info("step2 crud")
         return False
     item.utime = datetime.now(tz=None)
     item.status = status
     item.result = result
-    logger.info("step3 crud")
     if error is not None:
         item.error = error
     try:
-        logger.info("step4 crud")
         db.commit()
         return True
     except Exception:
-        logger.info("step5 crud")
         logger.opt(exception=True, colors=True).error("Failed to update_request")
         return False
