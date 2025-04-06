@@ -5,6 +5,8 @@ from core.messages import Message  # Fixed import
 from datetime import datetime
 from dbutils.schemas import WebhookStatus
 from typing import Dict
+from sqlalchemy.exc import IntegrityError
+
 
 
 def clear_database(db: Session):
@@ -35,8 +37,16 @@ def add_request(db: Session, **kwargs):
         db.add(item)
         db.commit()
         return Message("fa").INF_SUCCESS()
+    except IntegrityError as e:
+        if "UNIQUE constraint failed: facetotxt_manager.request_id" in str(e.args):
+            msg = Message("fa").ERR_DUPLICATE_REQUEST_ID()
+            return msg
+        else:
+            logger.opt(exception=True).error("Failed to add_request")
+            msg = Message("fa").ERR_FAILED_TO_ADD_TO_DB()
+            return msg
     except Exception:
-        logger.opt(exception=True, colors=True).error("Failed to add_request")
+        logger.opt(exception=True).error("Failed to add_request")
         msg = Message("fa").ERR_FAILED_TO_ADD_TO_DB()
         return msg
 
@@ -44,19 +54,24 @@ def add_request(db: Session, **kwargs):
 def update_request(
     db: Session, request_id: str, status: WebhookStatus, result: Dict, error: str = None
 ):
+    logger.info("step1 crud")
     item = (
         db.query(models.Manager).filter(models.Manager.request_id == request_id).first()
     )
     if item is None:
+        logger.info("step2 crud")
         return False
     item.utime = datetime.now(tz=None)
     item.status = status
     item.result = result
+    logger.info("step3 crud")
     if error is not None:
         item.error = error
     try:
+        logger.info("step4 crud")
         db.commit()
         return True
     except Exception:
+        logger.info("step5 crud")
         logger.opt(exception=True, colors=True).error("Failed to update_request")
         return False
