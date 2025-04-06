@@ -1,9 +1,6 @@
 # Large model files
-engine/model/genderModel_VGG16.hdf5
-engine/model/keypoint_classifier/keypoint.csv
-.idea/
-
-
+engine/model/yolo11n-pose.pt
+engine/model/yolo11s.pt
 
 # General large files
 *.hdf5
@@ -16,3 +13,4 @@ engine/model/keypoint_classifier/keypoint.csv
 *.tflite
 *.bin
 *.caffemodel
+*.csv
