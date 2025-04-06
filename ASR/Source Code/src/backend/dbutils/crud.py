@@ -5,6 +5,7 @@ from core.messages import Message
 from datetime import datetime
 from dbutils.schemas import WebhookStatus
 from typing import Dict
+from sqlalchemy.exc import IntegrityError
 
 
 def clear_database(db: Session):
@@ -35,8 +36,16 @@ def add_request(db: Session, **kwargs):
         db.add(item)
         db.commit()
         return Message("fa").INF_SUCCESS()
+    except IntegrityError as e:
+        if "UNIQUE constraint failed: manager.request_id" in str(e.args):
+            msg = Message("fa").ERR_DUPLICATE_REQUEST_ID()
+            return msg
+        else:
+            logger.opt(exception=True).error("Failed to add_request")
+            msg = Message("fa").ERR_FAILED_TO_ADD_TO_DB()
+            return msg
     except Exception:
-        logger.opt(exception=True, colors=True).error("Failed to add_request")
+        logger.opt(exception=True).error("Failed to add_request")
         msg = Message("fa").ERR_FAILED_TO_ADD_TO_DB()
         return msg
 
