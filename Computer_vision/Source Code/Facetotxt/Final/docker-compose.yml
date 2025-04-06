@@ -31,7 +31,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./engine:/approot/src
-      - ../Models:/approot/models
+      - ../../../Models/FaceToTxt:/approot/models
       - ../../../Outputs/FaceToTxt:/approot/data
     environment:
       - TZ=Asia/Tehran
