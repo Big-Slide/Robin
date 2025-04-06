@@ -46,7 +46,7 @@ services:
     restart: always
     depends_on:
       - queue
-    image: robin-asr-engine:0.0.1
+    image: robin-asr-engine-gpu:0.0.1
     networks:
       robinnet: null
   backend:
