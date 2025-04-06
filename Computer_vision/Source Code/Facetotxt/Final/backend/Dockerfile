@@ -16,12 +16,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Upgrade pip first
 RUN python -m pip install --upgrade pip
-
-# Copy requirements first for better caching
-COPY ./requirements.txt /srv/
+ADD ./requirements.txt /srv/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --timeout $PIP_TIMEOUT -r /srv/requirements.txt
 
 # Set working directory
-WORKDIR /approot/Final
+WORKDIR /approot/src
