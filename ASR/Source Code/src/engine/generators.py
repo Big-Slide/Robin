@@ -5,7 +5,8 @@ import librosa
 import os
 from typing import Dict
 
-# os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
+os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
+os.environ["TRANSFORMERS_CACHE"] = "/tmp/transformers_cache"
 
 
 if os.environ.get("MODE", "dev") == "prod":
