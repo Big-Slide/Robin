@@ -10,7 +10,7 @@ base_url = f"{config['AIHIVE_ADDR']}/api/Request"
 
 def set_inprogress(request_id: str) -> bool:
     url = base_url + f"/{request_id}"
-    headers = {"Content-type": "application/json", "Accept": "application/json"}
+    headers = {"Accept": "*/*"}
     params = {"status": WebhookStatus.in_progress.value, "output": "{}"}
     response = requests.put(url, params=params, headers=headers)
     # response.raise_for_status()
@@ -32,7 +32,7 @@ def set_inprogress(request_id: str) -> bool:
 def set_completed(request_id: str, text: str) -> bool:
     url = base_url + f"/{request_id}"
     result = {"text": text}
-    headers = {"Content-type": "application/json", "Accept": "*/*"}
+    headers = {"Accept": "*/*"}
     params = {"status": WebhookStatus.completed.value, "output": json.dumps(result)}
     response = requests.put(url, params=params, headers=headers)
     # response.raise_for_status()
@@ -53,7 +53,7 @@ def set_completed(request_id: str, text: str) -> bool:
 
 def set_failed(request_id: str) -> bool:
     url = base_url + f"/{request_id}"
-    headers = {"Content-type": "application/json", "Accept": "application/json"}
+    headers = {"Accept": "*/*"}
     params = {"status": WebhookStatus.failed.value, "output": "{}"}
     response = requests.put(url, params=params, headers=headers)
     # response.raise_for_status()
