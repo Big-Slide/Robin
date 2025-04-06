@@ -120,7 +120,7 @@ async def generate_sound(
     )
     await channel.close()
 
-    msg = Message("fa").INF_SUCCESS()
+    msg = Message("en").INF_SUCCESS()
     msg["data"] = {"request_id": request_id}
     return msg
 
@@ -131,7 +131,7 @@ async def get_status(request_id: str, db: Session = Depends(base.get_db)):
     task = crud.get_request(db=db, request_id=request_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    msg = Message("fa").INF_SUCCESS()
+    msg = Message("en").INF_SUCCESS()
     msg["data"] = task
     return msg
 
