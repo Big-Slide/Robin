@@ -2,12 +2,16 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import tensorflow as tf
+import os
 
-
+if os.environ.get("MODE", "dev") == "prod":
+    models_dir = "/approot/models"
+else:
+    models_dir = "../../../../Models/FaceToTxt"
 class KeyPointClassifier(object):
     def __init__(
         self,
-        model_path='model/keypoint_classifier/keypoint_classifier.tflite',
+        model_path=f'{models_dir}/keypoint_classifier/keypoint_classifier.tflite',
         num_threads=1,
     ):
         self.interpreter = tf.lite.Interpreter(model_path=model_path,
