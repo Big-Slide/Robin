@@ -122,6 +122,10 @@ class Message:
                 "fa": "سرویس در دسترس نیست، لطفا لحظاتی دیگر مجددا تلاش نمایید",
                 "en": "Service is unavailable, please try again in a few moments",
             },
+            "E134": {
+                "fa": "شناسه درخواست تکراری است",
+                "en": "Request ID is duplicate",
+            },
             "S100": {"fa": "موفق", "en": "Success"},
         }
 
@@ -401,6 +405,13 @@ class Message:
             "code": code,
             "message": self.get_msg_from_code(code=code),
         }
+    def ERR_DUPLICATE_REQUEST_ID(self, status: bool = False):
+        code = "E134"
+        return {
+            "status": status,
+            "code": code,
+            "message": self.get_msg_from_code(code=code),
+        }
 
     def INF_SUCCESS(self, status: bool = True):
         code = "S100"
@@ -409,3 +420,5 @@ class Message:
             "code": code,
             "message": self.get_msg_from_code(code=code),
         }
+
+
