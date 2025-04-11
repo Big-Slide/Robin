@@ -1,5 +1,5 @@
-CONSOLE_LOG_LEVEL: INFO
-FILE_LOG_LEVEL: INFO
+CONSOLE_LOG_LEVEL: DEBUG
+FILE_LOG_LEVEL: DEBUG
 QUEUE_CONNECTION: amqp://guest:guest@queue/
 DB_CONNECTION: sqlite:///../../Outputs/database/db.sql
 DB_DIR: ../../Outputs/database
