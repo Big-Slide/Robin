@@ -1,0 +1,7 @@
+CONSOLE_LOG_LEVEL: WARNING
+FILE_LOG_LEVEL: INFO
+QUEUE_CONNECTION: amqp://guest:guest@queue/
+DB_CONNECTION: sqlite:////approot/data/database/db.sql
+DB_DIR: /approot/data/database
+AIHIVE_ADDR: http://api.robin-co.com  # webhook base address
+BASE_URL_FILE_LINK: http://192.168.0.161:8001  # current service base address
