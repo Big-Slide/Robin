@@ -2,13 +2,6 @@ from generators import ASRGenerator
 import aio_pika
 import json
 from loguru import logger
-import os
-
-if os.environ.get("MODE", "dev") == "prod":
-    output_dir = "/approot/data/result"
-else:
-    output_dir = "../Outputs/result"
-os.makedirs(output_dir, exist_ok=True)
 
 
 async def process_message(
@@ -28,6 +21,7 @@ async def process_message(
                 request_id=request_id,
                 input_path=input_path,
             )
+            # TODO: mark task as in progress
             text = await asr_generator.do_asr(input_path)
 
             result = {
@@ -35,6 +29,7 @@ async def process_message(
                 "status": "completed",
                 "text": text,
             }
+            logger.debug(f"{result=}")
         except Exception as e:
             logger.exception(e)
             result = {"request_id": request_id, "status": "failed", "error": str(e)}

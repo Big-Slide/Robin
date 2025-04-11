@@ -5,9 +5,6 @@ import librosa
 import os
 from typing import Dict
 
-os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
-os.environ["TRANSFORMERS_CACHE"] = "/tmp/transformers_cache"
-
 
 if os.environ.get("MODE", "dev") == "prod":
     models_dir = "/approot/models"
@@ -42,12 +39,18 @@ class ASRGenerator:
 
     async def do_asr(self, input_path: str):
         # Load audio file
+        logger.debug(f"Loading {input_path}")
         audio, sr = librosa.load(input_path, sr=16000)
+        logger.debug(f"{input_path} loaded")
         input_values = self._processor(
             audio, sampling_rate=sr, return_tensors="pt", padding=True
         ).input_values.to(self._device)
+        logger.debug("Input values ready")
         with torch.no_grad():
             logits = self._model(input_values).logits
+        logger.debug("Logits ready")
         predicted_ids = torch.argmax(logits, dim=-1)
+        logger.debug("predictions ready")
         transcription = self._processor.batch_decode(predicted_ids)[0]
+        logger.debug(f"{transcription=}")
         return transcription

@@ -22,9 +22,12 @@ from dbutils.database import SessionLocal
 
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
+    temp_voice_dir = "/approot/data/temp_voice"
 else:
-    log_dir = "../Outputs/result"
+    log_dir = "../Outputs"
+    temp_voice_dir = "../Outputs/temp_voice"
 os.makedirs(log_dir, exist_ok=True)
+os.makedirs(temp_voice_dir, exist_ok=True)
 
 logger.remove()
 logger.add(
@@ -44,7 +47,7 @@ logger.add(
     level=config["FILE_LOG_LEVEL"],
     backtrace=True,
     diagnose=False,
-    colorize=True,
+    colorize=False,
     serialize=False,
     enqueue=True,
 )
@@ -84,30 +87,32 @@ async def generate_sound(
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    logger.info("/asr/speech-to-text-offline")
+    logger.info("/asr/speech-to-text-offline", request_id=request_id)
     if request_id is None:
         request_id = str(uuid.uuid4())
 
     # Save uploaded file
-    audio_path = f"temp_{audio_file.filename}"
-    with open(audio_path, "wb") as f:
+    input_path = f"{temp_voice_dir}/{request_id}_{audio_file.filename}"
+    with open(input_path, "wb") as f:
         f.write(await audio_file.read())
 
     response = crud.add_request(
         db=db,
         request_id=request_id,
-        input_path=audio_path,
+        input_path=input_path,
         itime=datetime.now(tz=None),
     )
     if not response["status"]:
+        if os.path.exists(input_path):
+            os.remove(input_path)
         return response
 
     channel = await connection.channel()
 
     # Prepare message with text, model, and request_id
-    # TODO: change input_path to binary data
+    # TODO: change input_path to binary data (be aware of 16k frequency conversion!)
     message_body = {
-        "input_path": audio_path,
+        "input_path": input_path,
         "request_id": request_id,
     }
 

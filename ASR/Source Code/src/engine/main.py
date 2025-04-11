@@ -4,10 +4,13 @@ from version import __version__
 from config.config_handler import config
 import sys
 
+os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
+os.environ["HF_HOME"] = "/tmp/hf_home"
+
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
 else:
-    log_dir = "../Outputs/result"
+    log_dir = "../Outputs"
 os.makedirs(log_dir, exist_ok=True)
 
 logger.remove()
@@ -28,7 +31,7 @@ logger.add(
     level=config["FILE_LOG_LEVEL"],
     backtrace=True,
     diagnose=False,
-    colorize=True,
+    colorize=False,
     serialize=False,
     enqueue=True,
 )
