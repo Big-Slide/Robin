@@ -20,22 +20,25 @@ Base.__str__ = str
 Base.items = items
 
 
+# Base.__repr__ = str
+
+
 class Manager(Base):
     """
-    Database model for managing body posture detection requests
+    Database model for managing body posture analysis requests
     """
-    __tablename__ = "body_posture_manager"
+    __tablename__ = "bodytotxt_manager"
 
     id = Column(String(255), primary_key=True, default=generate_uuid)
     request_id = Column(String(255), nullable=False, unique=True)
 
-    # Fields specific to body posture detection
+    # Fields specific to body posture  analysis
     image_path = Column(String(255), nullable=True)  # Path to the stored image
     priority = Column(Integer, nullable=True, default=1)
 
     # Status tracking
     status = Column(Enum(WebhookStatus), nullable=False, default=WebhookStatus.pending)
-    result = Column(JSON, nullable=True)  # Store body posture results as JSON
+    result = Column(JSON, nullable=True)
     error = Column(String(4000), nullable=True)
 
     # Webhook retry tracking
