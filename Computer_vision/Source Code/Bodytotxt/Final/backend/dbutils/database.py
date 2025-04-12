@@ -15,7 +15,7 @@ def _fk_pragma_on_connect(dbapi_con, con_record):
 os.makedirs(config.get("DB_DIR", "db"), exist_ok=True)
 
 # Create database engine based on connection string
-connection_string = config.get("DB_CONNECTION", "sqlite:///db/facetotxt.db")
+connection_string = config.get("DB_CONNECTION", "sqlite:///db/bodytotxt.db")
 
 if "sqlite" in connection_string:
     engine = create_engine(
