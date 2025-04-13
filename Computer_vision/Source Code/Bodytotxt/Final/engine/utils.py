@@ -4,6 +4,14 @@ import numpy as np
 from pydantic import BaseModel
 from ultralytics import YOLO
 from fastapi import HTTPException
+import os
+
+if os.environ.get("MODE", "dev") == "prod":
+    models_dir = "/approot/models"
+else:
+    models_dir = "../../../../Models/BodyToTxt"
+PoseModelPath = f'{models_dir}/yolo11n-pose.pt'
+bodymodelpath = f'{models_dir}/yolo11s.pt'
 
 
 class PoseResponse(BaseModel):
@@ -14,7 +22,7 @@ class PoseResponse(BaseModel):
 class PoseDetector:
     def __init__(self):
         # Initialize the YOLO model
-        self.model = YOLO('model/yolo11n-pose.pt')
+        self.model = YOLO(PoseModelPath)
 
         # Define thresholds
         self.up_tresh_hand = 170
@@ -168,7 +176,7 @@ class PoseDetector:
 class FallDetector:
     def __init__(self):
         # Initialize the YOLO model for fall detection
-        self.fall_model = YOLO("model/yolo11s.pt")
+        self.fall_model = YOLO(bodymodelpath)
 
     def detect_fall(self, frame):
         """
