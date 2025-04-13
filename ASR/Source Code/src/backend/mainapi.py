@@ -80,7 +80,7 @@ base_mdl = base.Base()
 
 
 @app.post("/aihive-sptotxt/api/v1/speech-to-text-offline")
-async def generate_sound(
+async def speech_to_text(
     audio_file: UploadFile,
     request_id: str = None,
     priority: int = 1,
