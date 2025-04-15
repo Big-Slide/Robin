@@ -7,17 +7,20 @@ import uuid
 import json
 import asyncio
 import base64
+from core.messages import Message
 from datetime import datetime
 from fastapi.responses import FileResponse
 from loguru import logger
 import os
+from version import __version__
+from config.config_handler import config
+from core.queue_utils import consume_results, get_rabbitmq_connection
+from dbutils import schemas, crud
+import sys
 from starlette.middleware.cors import CORSMiddleware
 from core import base
 from dbutils.database import SessionLocal
-from dbutils import schemas, crud
-from core.queue_utils import consume_results, get_rabbitmq_connection
-import sys
-from config.config_handler import config
+
 
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
@@ -43,12 +46,12 @@ logger.add(
     level=config["FILE_LOG_LEVEL"],
     backtrace=True,
     diagnose=False,
-    colorize=True,
+    colorize=False,
     serialize=False,
     enqueue=True,
 )
 
-logger.info("Starting Body Posture Detection Service")
+logger.info("Starting Body Posture Detection Service", version=__version__)
 
 
 @asynccontextmanager
@@ -59,16 +62,9 @@ async def lifespan(app: FastAPI):
         db = SessionLocal()
         asyncio.create_task(consume_results(connection, db))
         yield
-    except Exception as e:
-        logger.error(f"Failed to initialize services: {e}")
-        response = schemas.ApiResponse.error("ERR_FAILED_TO_CONNECT_TO_SERVER", "RabbitMQ")
-        raise HTTPException(status_code=503, detail=response.message)
     finally:
-        try:
-            db.close()
-            await connection.close()
-        except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+        db.close()
+        await connection.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -101,7 +97,7 @@ async def process_image(
         image_data = await image.read()
     except Exception as e:
         logger.error(f"Failed to read image: {e}")
-        return schemas.ApiResponse.error("ERR_INVALID_INPUT")
+        return Message("en").ERR_INVALID_INPUT()
 
     # Add request to database
     response = crud.add_request(
@@ -112,37 +108,35 @@ async def process_image(
     )
 
     if not response["status"]:
-        return schemas.ApiResponse.error("ERR_FAILED_TO_ADD_TO_DB")
+        return response
 
-    try:
-        # Create channel
-        channel = await connection.channel()
+    # Create channel
+    channel = await connection.channel()
 
-        # Convert image to base64
-        base64_image = base64.b64encode(image_data).decode('utf-8')
+    # Convert image to base64
+    base64_image = base64.b64encode(image_data).decode('utf-8')
 
-        # Prepare message
-        message_body = {
-            "image": base64_image,
-            "request_id": request_id,
-            "priority": priority,
-        }
+    # Prepare message
+    message_body = {
+        "image": base64_image,
+        "request_id": request_id,
+        "priority": priority,
+    }
 
-        # Publish to queue
-        await channel.default_exchange.publish(
-            aio_pika.Message(
-                body=json.dumps(message_body).encode(),
-                headers={"request_id": request_id},
-            ),
-            routing_key="body_posture_queue",
-        )
-        await channel.close()
+    # Publish to queue
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=json.dumps(message_body).encode(),
+            headers={"request_id": request_id},
+        ),
+        routing_key="body_posture_queue",
+    )
+    await channel.close()
 
-        # Return success response
-        return schemas.ApiResponse.success(data={"request_id": request_id})
-    except Exception as e:
-        logger.error(f"Failed to publish message to queue: {e}")
-        return schemas.ApiResponse.error("ERR_FAILED_TO_CONNECT_TO_SERVER", "RabbitMQ")
+    # Return success response
+    msg = Message("en").INF_SUCCESS()
+    msg["data"] = {"request_id": request_id}
+    return msg
 
 
 @app.get("/aihive-bodytotxt/api/v1/status/{request_id}")
@@ -150,10 +144,10 @@ async def get_status(request_id: str, db: Session = Depends(base.get_db)):
     logger.info("/bodytotxt/status", request_id=request_id)
     task = crud.get_request(db=db, request_id=request_id)
     if not task:
-        response = schemas.ApiResponse.error("ERR_NOT_FOUND", request_id)
-        raise HTTPException(status_code=404, detail=response.message)
-
-    return schemas.ApiResponse.success(data=task)
+        raise HTTPException(status_code=404, detail="Task not found")
+    msg = Message("en").INF_SUCCESS()
+    msg["data"] = task
+    return msg
 
 
 @app.get("/aihive-bodytotxt/api/v1/image/{request_id}")
@@ -161,58 +155,15 @@ async def get_image(request_id: str, db: Session = Depends(base.get_db)):
     logger.info("/bodytotxt/image", request_id=request_id)
     task = crud.get_request(db=db, request_id=request_id)
     if not task:
-        response = schemas.ApiResponse.error("ERR_NOT_FOUND", request_id)
-        raise HTTPException(status_code=404, detail=response.message)
-
+        raise HTTPException(status_code=404, detail="Task not found")
     if task.status == schemas.WebhookStatus.completed and task.result:
         # Assuming result contains a path to the image
         image_path = task.result.get("image_path")
         if image_path and os.path.exists(image_path):
             return FileResponse(path=image_path, media_type="image/jpeg")
-
-        response = schemas.ApiResponse.custom_error("Image file not found")
-        raise HTTPException(status_code=404, detail=response.message)
     else:
-        if task.status == schemas.WebhookStatus.pending:
-            response = schemas.ApiResponse.custom_error("Task is still pending")
-        elif task.status == schemas.WebhookStatus.in_progress:
-            response = schemas.ApiResponse.custom_error("Task is being processed")
-        else:
-            response = schemas.ApiResponse.error("ERR_FAILED")
-
-        raise HTTPException(status_code=404, detail=response.message)
-
-
-@app.post("/aihive-bodytotxt/webhook")
-async def webhook(
-        request_id: str = Form(...),
-        db: Session = Depends(base.get_db)
-):
-    """
-    Webhook endpoint for checking body posture analysis status
-
-    Args:
-        request_id: The ID of the request to check
-        db: Database session
-
-    Returns:
-        dict: Status and results of the body posture analysis
-    """
-    logger.info(f"Webhook request for {request_id}")
-
-    # Get the task from the database
-    task = crud.get_request(db=db, request_id=request_id)
-
-    # Log the task for debugging
-    logger.info(f"Task retrieved: {task}")
-
-    if not task:
-        logger.warning(f"Task not found for request_id: {request_id}")
-        return schemas.WebhookResponse.failed(f"Request {request_id} not found")
-
-    # Return appropriate response based on task status
-    return schemas.WebhookResponse.from_status(task.status, task.result)
+        raise HTTPException(status_code=404, detail="Image not available or task pending/failed")
 
 
 if __name__ == "__main__":
-    uvicorn.run(app="mainapi:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(app="mainapi:app", host="0.0.0.0", port=8004, reload=False)
