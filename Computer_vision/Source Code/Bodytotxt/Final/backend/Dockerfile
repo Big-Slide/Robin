@@ -19,10 +19,10 @@ RUN apt-get update && apt-get install -y \
 RUN python -m pip install --upgrade pip
 
 # Copy requirements first for better caching
-add ./requirements.txt /srv/
+ADD ./requirements.txt /srv/
 # Install Python dependencies
-RUN python -m pip install --timeout $PIP_TIMEOUT -r /srv/requirements.txt
+RUN python -m pip install -r /srv/requirements.txt --timeout $PIP_TIMEOUT
 
 
 # Expose the port the app runs on
-WORKDIR /approot/Final
+WORKDIR /approot/src
