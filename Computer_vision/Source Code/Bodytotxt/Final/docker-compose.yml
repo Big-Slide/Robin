@@ -56,7 +56,7 @@ services:
         PIP_TIMEOUT: 500
     command: bash ./cmd.sh
     ports:
-      - ${PORT_BACKEND}:8002
+      - ${PORT_BACKEND}:8004
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./backend:/approot/src
