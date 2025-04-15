@@ -94,82 +94,132 @@ class PoseDetector:
             raise HTTPException(status_code=400, detail="Invalid image format")
 
         frame = cv2.resize(frame, (1020, 500))
-        result = self.model.track(frame)
+
+        # Using predict instead of track to avoid lap dependency issues
+        result = self.model.predict(frame)
 
         actions = []
         body_status = {'full_body': False}
 
-        if result[0].boxes is not None and result[0].boxes.id is not None:
-            keypoints = result[0].keypoints.xy.cpu().numpy()
-            for keypoint in keypoints:
-                if len(keypoint) > 16:
-                    body_status = self.check_full_body(keypoint)
+        # Log detection results
+        import logging
+        logging.info(f"Detection result: {result}")
 
-                    if body_status['full_body']:
+        if result[0].boxes is not None:
+            # Check if keypoints are present
+            if hasattr(result[0], 'keypoints') and result[0].keypoints is not None:
+                keypoints = result[0].keypoints.xy.cpu().numpy()
+                logging.info(f"Found {len(keypoints)} keypoint sets")
+
+                for i, keypoint in enumerate(keypoints):
+                    logging.info(f"Keypoint set {i} has {len(keypoint)} points")
+
+                    # More lenient check - just ensure we have the minimum number of points
+                    if len(keypoint) >= 17:  # We need at least 17 points (0-16)
+                        body_status = self.check_full_body(keypoint)
+                        logging.info(f"Body status: {body_status}")
+
+                        # Process even if full body is not detected, but log the status
+                        if not body_status['full_body']:
+                            actions.append("Full body not detected")
+                            logging.info("Full body not detected, showing partial pose information")
+                        else:
+                            actions.append("Full body detected")
+
+                        # Continue with pose detection regardless of full body status
                         points = []
+                        valid_points = True
+
                         for point in keypoint:
                             cx, cy = int(point[0]), int(point[1])
+                            # Check if point is valid (not 0,0 which could indicate missing detection)
+                            if cx == 0 and cy == 0:
+                                valid_points = False
                             points.append((cx, cy))
 
-                        actions.append("Full body detected")
+                        if valid_points and len(points) >= 17:
+                            try:
+                                # Calculate angles with more error checking
+                                left_arm_angle = self.angle(points[7][0], points[7][1], points[5][0], points[5][1],
+                                                            points[11][0], points[11][1])
+                                right_arm_angle = self.angle(points[8][0], points[8][1], points[6][0], points[6][1],
+                                                             points[12][0], points[12][1])
+                                left_knee_angle = self.angle(points[11][0], points[11][1], points[13][0], points[13][1],
+                                                             points[15][0], points[15][1])
+                                right_knee_angle = self.angle(points[12][0], points[12][1], points[14][0],
+                                                              points[14][1],
+                                                              points[16][0], points[16][1])
+                                letf_hand_angle = self.angle(points[5][0], points[5][1], points[8][0], points[8][1],
+                                                             points[10][0], points[10][1])
+                                right_hand_angle = self.angle(points[6][0], points[6][1], points[7][0], points[7][1],
+                                                              points[9][0], points[9][1])
+                                head_angle = self.angle(points[0][0], points[0][1], points[5][0], points[5][1],
+                                                        points[6][0], points[6][1])
+                                left_hip_angle = self.angle(points[14][0], points[14][1], points[12][0], points[12][1],
+                                                            points[11][0], points[11][1])
+                                right_hip_angle = self.angle(points[13][0], points[13][1], points[11][0], points[11][1],
+                                                             points[12][0], points[12][1])
+                                left_upper_body_angle = self.angle(points[5][0], points[5][1], points[11][0],
+                                                                   points[11][1],
+                                                                   points[13][0], points[13][1])
+                                right_upper_body_angle = self.angle(points[6][0], points[6][1], points[12][0],
+                                                                    points[12][1],
+                                                                    points[14][0], points[14][1])
 
-                        # Calculate angles
-                        left_arm_angle = self.angle(points[7][0], points[7][1], points[5][0], points[5][1],
-                                                    points[11][0], points[11][1])
-                        right_arm_angle = self.angle(points[8][0], points[8][1], points[6][0], points[6][1],
-                                                     points[12][0], points[12][1])
-                        left_knee_angle = self.angle(points[11][0], points[11][1], points[13][0], points[13][1],
-                                                     points[15][0], points[15][1])
-                        right_knee_angle = self.angle(points[12][0], points[12][1], points[14][0], points[14][1],
-                                                      points[16][0], points[16][1])
-                        letf_hand_angle = self.angle(points[5][0], points[5][1], points[8][0], points[8][1],
-                                                     points[10][0], points[10][1])
-                        right_hand_angle = self.angle(points[6][0], points[6][1], points[7][0], points[7][1],
-                                                      points[9][0], points[9][1])
-                        head_angle = self.angle(points[0][0], points[0][1], points[5][0], points[5][1],
-                                                points[6][0], points[6][1])
-                        left_hip_angle = self.angle(points[14][0], points[14][1], points[12][0], points[12][1],
-                                                    points[11][0], points[11][1])
-                        right_hip_angle = self.angle(points[13][0], points[13][1], points[11][0], points[11][1],
-                                                     points[12][0], points[12][1])
-                        left_upper_body_angle = self.angle(points[5][0], points[5][1], points[11][0], points[11][1],
-                                                           points[13][0], points[13][1])
-                        right_upper_body_angle = self.angle(points[6][0], points[6][1], points[12][0], points[12][1],
-                                                            points[14][0], points[14][1])
+                                # Log angles for debugging
+                                logging.info(f"Left arm angle: {left_arm_angle}, threshold: {self.arm_up_tresh}")
+                                logging.info(f"Right arm angle: {right_arm_angle}, threshold: {self.arm_up_tresh}")
+                                logging.info(
+                                    f"Head angle: {head_angle}, thresholds: {self.head_tresh_down}/{self.head_tresh_up}")
 
-                        # Check conditions and add actions
-                        if left_arm_angle >= self.arm_up_tresh:
-                            actions.append("left arm up")
-                        if right_arm_angle >= self.arm_up_tresh:
-                            actions.append("right arm up")
-                        if right_arm_angle >= self.arm_up_tresh and left_arm_angle >= self.arm_up_tresh:
-                            actions.append("both arms up")
+                                # Check conditions and add actions
+                                if left_arm_angle >= self.arm_up_tresh:
+                                    actions.append("left arm up")
+                                if right_arm_angle >= self.arm_up_tresh:
+                                    actions.append("right arm up")
+                                if right_arm_angle >= self.arm_up_tresh and left_arm_angle >= self.arm_up_tresh:
+                                    actions.append("both arms up")
 
-                        if head_angle <= self.head_tresh_down:
-                            actions.append("head to left")
-                        if head_angle >= self.head_tresh_up:
-                            actions.append("head to right")
+                                if head_angle <= self.head_tresh_down:
+                                    actions.append("head to left")
+                                if head_angle >= self.head_tresh_up:
+                                    actions.append("head to right")
 
-                        if left_hip_angle + right_hip_angle >= self.hip_tresh:
-                            actions.append("legs are wide open")
+                                if left_hip_angle + right_hip_angle >= self.hip_tresh:
+                                    actions.append("legs are wide open")
 
-                        if left_knee_angle <= self.down_tresh_leg:
-                            actions.append("left knee bended")
-                        if right_knee_angle <= self.down_tresh_leg:
-                            actions.append("right knee bended")
+                                if left_knee_angle <= self.down_tresh_leg:
+                                    actions.append("left knee bended")
+                                if right_knee_angle <= self.down_tresh_leg:
+                                    actions.append("right knee bended")
 
-                        if right_knee_angle <= self.down_tresh_leg and left_knee_angle <= self.down_tresh_leg:
-                            actions.append("both knee bended")
+                                if right_knee_angle <= self.down_tresh_leg and left_knee_angle <= self.down_tresh_leg:
+                                    actions.append("both knee bended")
 
-                        if letf_hand_angle <= self.down_tresh_hand and right_hand_angle <= self.down_tresh_hand:
-                            actions.append("I am strong")
-                        if left_upper_body_angle <= self.upper_body_tresh:
-                            actions.append("left leg up")
-                        if right_upper_body_angle <= self.upper_body_tresh:
-                            actions.append("right leg up")
-
+                                if letf_hand_angle <= self.down_tresh_hand and right_hand_angle <= self.down_tresh_hand:
+                                    actions.append("I am strong")
+                                if left_upper_body_angle <= self.upper_body_tresh:
+                                    actions.append("left leg up")
+                                if right_upper_body_angle <= self.upper_body_tresh:
+                                    actions.append("right leg up")
+                            except Exception as e:
+                                logging.error(f"Error calculating angles: {e}")
+                                actions.append("Error in pose calculation")
                     else:
-                        actions.append("Full body not detected")
+                        actions.append("Insufficient keypoints detected")
+                        logging.warning(f"Insufficient keypoints: {len(keypoint)} (need at least 17)")
+            else:
+                actions.append("No keypoints detected")
+                logging.warning("No keypoints attribute in detection result")
+        else:
+            actions.append("No detection")
+            logging.warning("No detection boxes found")
+
+        if not actions:
+            actions.append("No pose actions detected")
+
+        logging.info(f"Final actions: {actions}")
+        logging.info(f"Final body status: {body_status}")
 
         return actions, body_status
 
