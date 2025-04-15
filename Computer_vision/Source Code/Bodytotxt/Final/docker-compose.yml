@@ -41,7 +41,7 @@ services:
     restart: always
     depends_on:
       - queue
-    image: robin-Bodytotxt-engine:0.0.2
+    image: robin-bodytotxt-engine:0.0.2
     networks:
       robinnet: null
 
