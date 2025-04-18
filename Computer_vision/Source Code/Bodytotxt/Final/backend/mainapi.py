@@ -150,19 +150,6 @@ async def get_status(request_id: str, db: Session = Depends(base.get_db)):
     return msg
 
 
-@app.get("/aihive-bodytotxt/api/v1/image/{request_id}")
-async def get_image(request_id: str, db: Session = Depends(base.get_db)):
-    logger.info("/bodytotxt/image", request_id=request_id)
-    task = crud.get_request(db=db, request_id=request_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    if task.status == schemas.WebhookStatus.completed and task.result:
-        # Assuming result contains a path to the image
-        image_path = task.result.get("image_path")
-        if image_path and os.path.exists(image_path):
-            return FileResponse(path=image_path, media_type="image/jpeg")
-    else:
-        raise HTTPException(status_code=404, detail="Image not available or task pending/failed")
 
 
 if __name__ == "__main__":
