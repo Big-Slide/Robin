@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 from pydantic import BaseModel
 from ultralytics import YOLO
-from fastapi import HTTPException
 import os
 
 if os.environ.get("MODE", "dev") == "prod":
@@ -91,7 +90,7 @@ class PoseDetector:
         nparr = np.frombuffer(image_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         if frame is None:
-            raise HTTPException(status_code=400, detail="Invalid image format")
+            raise ("Invalid image format")
 
         frame = cv2.resize(frame, (1020, 500))
 
