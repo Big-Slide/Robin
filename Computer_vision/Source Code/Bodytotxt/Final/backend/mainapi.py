@@ -97,7 +97,7 @@ async def process_image(
         image_data = await image.read()
     except Exception as e:
         logger.error(f"Failed to read image: {e}")
-        return Message("en").ERR_INVALID_INPUT()
+        return Message("fa").ERR_INVALID_INPUT()
 
     # Add request to database
     response = crud.add_request(
@@ -134,7 +134,7 @@ async def process_image(
     await channel.close()
 
     # Return success response
-    msg = Message("en").INF_SUCCESS()
+    msg = Message("fa").INF_SUCCESS()
     msg["data"] = {"request_id": request_id}
     return msg
 
@@ -145,7 +145,7 @@ async def get_status(request_id: str, db: Session = Depends(base.get_db)):
     task = crud.get_request(db=db, request_id=request_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    msg = Message("en").INF_SUCCESS()
+    msg = Message("fa").INF_SUCCESS()
     msg["data"] = task
     return msg
 
