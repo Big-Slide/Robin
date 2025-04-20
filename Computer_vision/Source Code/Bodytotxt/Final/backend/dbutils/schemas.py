@@ -45,7 +45,7 @@ class WebhookResponse(BaseModel):
     """Schema for webhook response"""
     status: bool = False
     message: str = ""
-    code: str = "0"  # 0=pending, 1=in_progress, 2=completed, 3=failed
+    code: str = ""
     results: Optional[BodyPostureResult] = None
 
 
