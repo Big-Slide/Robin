@@ -12,7 +12,7 @@ from datetime import datetime
 if os.environ.get("MODE", "dev") == "prod":
     output_dir = "/approot/data/result"
 else:
-    output_dir = "../Outputs/result"
+    output_dir = "../../../../../Outputs/result"
 os.makedirs(output_dir, exist_ok=True)
 
 # Initialize detectors once
