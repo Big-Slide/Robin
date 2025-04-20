@@ -25,3 +25,15 @@ Then change model path in `main.py`
 
 ### requirements
 pip install torch==2.5.1+cu124 --index-url https://download.pytorch.org/whl/cu124
+
+## Dev
+```
+cd src
+docker run --rm -p 5672:5672 -e RABBITMQ_CONFIG_FILE=/etc/rabbitmq/rabbitmq.conf -v "/$(pwd)/src/rabbitmq/config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf" rabbitmq:4.0.6-management
+
+cd src/engine
+python3.10 main.py
+
+cd src/backend
+python3.10 mainapi.py
+```

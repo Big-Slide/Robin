@@ -24,8 +24,8 @@ if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
     temp_voice_dir = "/approot/data/temp_voice"
 else:
-    log_dir = "../Outputs"
-    temp_voice_dir = "../Outputs/temp_voice"
+    log_dir = "../../../Outputs"
+    temp_voice_dir = "../../../Outputs/temp_voice"
 os.makedirs(log_dir, exist_ok=True)
 os.makedirs(temp_voice_dir, exist_ok=True)
 
