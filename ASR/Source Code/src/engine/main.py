@@ -10,7 +10,7 @@ os.environ["HF_HOME"] = "/tmp/hf_home"
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
 else:
-    log_dir = "../Outputs"
+    log_dir = "../../../Outputs"
 os.makedirs(log_dir, exist_ok=True)
 
 logger.remove()

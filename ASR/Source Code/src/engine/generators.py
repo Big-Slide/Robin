@@ -4,19 +4,20 @@ import torch
 import librosa
 import os
 from typing import Dict
+from config.config_handler import config
 
 
 if os.environ.get("MODE", "dev") == "prod":
     models_dir = "/approot/models"
 else:
-    models_dir = "../../Models"
+    models_dir = "../../../Models"
 
-models = {"1": {"model_path": f"{models_dir}/SLPL/Sharif-wav2vec2"}}
+models = {"Sharif-wav2vec2": {"model_path": f"{models_dir}/SLPL/Sharif-wav2vec2"}}
 
 
 class ASRGenerator:
     def __init__(self):
-        model_id = "1"
+        model_id = config.MODEL_ID
         # Check if GPU is available and set device
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.info(f"Device: {self._device}")

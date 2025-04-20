@@ -1,3 +1,4 @@
 CONSOLE_LOG_LEVEL: WARNING
 FILE_LOG_LEVEL: INFO
 QUEUE_CONNECTION: amqp://guest:guest@queue/
+MODEL_ID: Sharif-wav2vec2
