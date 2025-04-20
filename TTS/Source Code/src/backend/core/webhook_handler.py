@@ -55,9 +55,12 @@ def set_completed(db: Session, request_id: str) -> bool:
         headers=headers,
         files={"outputFile": get_file(db, request_id)},
     )
+    crud.set_webhook_result(
+        db=db, request_id=request_id, webhook_status_code=response.status_code
+    )
     # response.raise_for_status()
     if response.status_code == 200:
-        logger.info(
+        logger.debug(
             "Webhook-set_completed",
             status_code=response.status_code,
             # content=response.content,
@@ -72,14 +75,17 @@ def set_completed(db: Session, request_id: str) -> bool:
         return False
 
 
-def set_failed(request_id: str) -> bool:
+def set_failed(db: Session, request_id: str) -> bool:
     url = base_url + f"/{request_id}"
     params = {"status": WebhookStatus.failed.value, "output": "{}"}
     headers = {"Accept": "*/*"}
     response = requests.put(url, params=params, headers=headers)
+    crud.set_webhook_result(
+        db=db, request_id=request_id, webhook_status_code=response.status_code
+    )
     # response.raise_for_status()
     if response.status_code == 200:
-        logger.info(
+        logger.debug(
             "Webhook-set_failed",
             status_code=response.status_code,
             # content=response.content,

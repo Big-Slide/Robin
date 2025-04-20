@@ -69,3 +69,23 @@ def update_request(
     except Exception:
         logger.opt(exception=True, colors=True).error("Failed to update_request")
         return False
+
+
+def set_webhook_result(db: Session, request_id: str, webhook_status_code: int) -> bool:
+    item = (
+        db.query(models.Manager).filter(models.Manager.request_id == request_id).first()
+    )
+    if item is None:
+        return False
+    item.utime = datetime.now(tz=None)
+    if item.webhook_retry_count is None:
+        item.webhook_retry_count = 0
+    else:
+        item.webhook_retry_count += 1
+    item.webhook_status_code = webhook_status_code
+    try:
+        db.commit()
+        return True
+    except Exception:
+        logger.opt(exception=True, colors=True).error("Failed to set_webhook_result")
+        return False
