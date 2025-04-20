@@ -18,14 +18,17 @@ import sys
 from starlette.middleware.cors import CORSMiddleware
 from core import base
 from dbutils.database import SessionLocal
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+import pytz
 
 
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
     temp_voice_dir = "/approot/data/temp_voice"
 else:
-    log_dir = "../Outputs"
-    temp_voice_dir = "../Outputs/temp_voice"
+    log_dir = "../../../Outputs"
+    temp_voice_dir = "../../../Outputs/temp_voice"
 os.makedirs(log_dir, exist_ok=True)
 os.makedirs(temp_voice_dir, exist_ok=True)
 
@@ -59,11 +62,23 @@ logger.info("Starting service", version=__version__)
 async def lifespan(app: FastAPI):
     """Lifespan to start the result consumer."""
     try:
+        # Result queue
         connection = await aio_pika.connect_robust(config["QUEUE_CONNECTION"])
         db = SessionLocal()
         asyncio.create_task(consume_results(connection, db))
+        # Delete unused temp files everyday at 2 AM
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(
+            crud.clean_unused_temp_files,
+            trigger=CronTrigger(
+                hour=2, minute=0, timezone=pytz.timezone("Asia/Tehran")
+            ),
+            args=(db,),
+        )
+        scheduler.start()
         yield
     finally:
+        scheduler.shutdown()
         db.close()
         await connection.close()
 

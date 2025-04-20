@@ -73,7 +73,7 @@ services:
     depends_on:
       - queue
       - engine
-    image: robin-asr-backend:0.0.1
+    image: robin-asr-backend:0.0.2
     networks:
       robinnet: null    
 networks:
