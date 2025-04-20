@@ -22,7 +22,7 @@ class PoseDetector:
     def __init__(self):
         # Initialize the YOLO model
         self.model = YOLO(PoseModelPath)
-
+        #TODO: import treshholds to configs
         # Define thresholds
         self.up_tresh_hand = 170
         self.down_tresh_hand = 95
