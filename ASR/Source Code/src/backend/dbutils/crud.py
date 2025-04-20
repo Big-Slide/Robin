@@ -2,10 +2,11 @@ from sqlalchemy.orm import Session
 from dbutils import models
 from loguru import logger
 from core.messages import Message
-from datetime import datetime
+from datetime import datetime, timedelta
 from dbutils.schemas import WebhookStatus
 from typing import Dict
 from sqlalchemy.exc import IntegrityError
+from core import utils
 
 
 def clear_database(db: Session):
@@ -89,3 +90,15 @@ def set_webhook_result(db: Session, request_id: str, webhook_status_code: int) -
     except Exception:
         logger.opt(exception=True, colors=True).error("Failed to set_webhook_result")
         return False
+
+
+def clean_unused_temp_files(db: Session):
+    filepaths = (
+        db.query(models.Manager.input_path)
+        .filter(models.Manager.status == "completed")
+        .filter(models.Manager.webhook_status_code == 200)
+        .filter(models.Manager.utime < datetime.now() - timedelta(days=7))
+        .all()
+    )
+    for filepath in filepaths:
+        utils.delete_file(filepath[0])
