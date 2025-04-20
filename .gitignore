@@ -13,3 +13,5 @@ engine/model/keypoint_classifier/keypoint.csv
 *.tflite
 *.bin
 .idea
+
+.DS_store
