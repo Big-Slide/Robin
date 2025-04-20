@@ -2,10 +2,7 @@ from loguru import logger
 import edge_tts
 import os
 from typing import List, Dict
-# import tempfile
-# from fastapi.responses import FileResponse, JSONResponse
-# from fastapi import BackgroundTasks
-# from starlette import status as status_code
+from config.config_handler import config
 
 logger.info("Loading synthesizer...")
 os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
@@ -15,7 +12,7 @@ from TTS.utils.synthesizer import Synthesizer
 if os.environ.get("MODE", "dev") == "prod":
     models_dir = "/approot/models"
 else:
-    models_dir = "../../Models"
+    models_dir = "../../../Models"
 
 models = {
     "1": {  # ~Bad
@@ -80,7 +77,7 @@ class TTSGenerator:
 
     async def do_tts(self, text: str, tmp_path: str, model: str = None):
         if model is None:
-            model = "male1-online"
+            model = config.MODEL_ID_DEFAULT
         if model == "male1-online":
             voice = "fa-IR-FaridNeural"
             communicate = edge_tts.Communicate(text, voice)
