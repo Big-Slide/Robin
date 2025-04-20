@@ -2,10 +2,10 @@ services:
   queue:
     image: rabbitmq:4.0.6-management
     ports:
-      - ${RABBITMQ_MANAGEMENT_PORT}:15672
+      - ${PORT_RABBITMQ_MANAGEMENT}:15672
     volumes:
-      - ../../../Outputs/FaceToTxt/rabbitmq_logs:/var/log/rabbitmq
-      - ../../../Outputs/FaceToTxt/rabbitmq_data:/var/lib/rabbitmq
+      - ../../../Outputs/BodyToTxt/rabbitmq_logs:/var/log/rabbitmq
+      - ../../../Outputs/BodyToTxt/rabbitmq_data:/var/lib/rabbitmq
       - ./rabbitmq/config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     environment:
       - TZ=Asia/Tehran
@@ -31,8 +31,8 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./engine:/approot/src
-      - ../../../Models/FaceToTxt:/approot/models
-      - ../../../Outputs/FaceToTxt:/approot/data
+      - ../../../Models/BodyToTxt:/approot/models
+      - ../../../Outputs/BodyToTxt:/approot/data
     environment:
       - TZ=Asia/Tehran
       - MPLCONFIGDIR=/tmp/matplotlib
@@ -41,7 +41,7 @@ services:
     restart: always
     depends_on:
       - queue
-    image: robin-facetotxt-engine:0.0.2
+    image: robin-bodytotxt-engine:0.0.2
     networks:
       robinnet: null
 
@@ -60,7 +60,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./backend:/approot/src
-      - ../../../Outputs/FaceToTxt:/approot/data
+      - ../../../Outputs/BodyToTxt:/approot/data
     environment:
       - TZ=Asia/Tehran
       - MODE
@@ -69,10 +69,10 @@ services:
     depends_on:
       - queue
       - engine
-    image: robin-facetotxt-backend:0.0.2
+    image: robin-bodytotxt-backend:0.0.2
     networks:
       robinnet: null
-      
+
 networks:
   robinnet:
     driver: bridge
