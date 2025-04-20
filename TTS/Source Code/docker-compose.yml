@@ -3,8 +3,8 @@ services:
   queue:
     image: rabbitmq:4.0.6-management
     ports:
-      - 5672:5672
-      - 15672:15672
+      # - 5672:5672 # Don't expose this
+      - ${PORT_RABBITMQ_MANAGEMENT}:15672
     volumes:
       - ../Outputs/rabbitmq_logs:/var/log/rabbitmq
       - ../Outputs/rabbitmq_data:/var/lib/rabbitmq

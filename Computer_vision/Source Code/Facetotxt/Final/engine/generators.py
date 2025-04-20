@@ -4,11 +4,16 @@ import cv2
 import numpy as np
 import mediapipe as mp
 from keras.models import load_model
-from model import KeyPointClassifier
+from keypoint_classifier import KeyPointClassifier
+import os
 
 
 # =================== Load Gender Classification Model ===================
-genderModelPath = 'model/genderModel_VGG16.hdf5'
+if os.environ.get("MODE", "dev") == "prod":
+    models_dir = "/approot/models"
+else:
+    models_dir = "../../../../Models/FaceToTxt"
+genderModelPath = f'{models_dir}/genderModel_VGG16.hdf5'
 genderClassifier = load_model(genderModelPath, compile=False)
 genderTargetSize = genderClassifier.input_shape[1:3]
 
@@ -19,12 +24,12 @@ genders = {
 
 # =================== Load Emotion Classification Model ===================
 keypoint_classifier = KeyPointClassifier()
-with open('model/keypoint_classifier/keypoint_classifier_label.csv', encoding='utf-8-sig') as f:
+with open(f'{models_dir}/keypoint_classifier/keypoint_classifier_label.csv', encoding='utf-8-sig') as f:
     keypoint_classifier_labels = [row[0] for row in csv.reader(f)]
 
 # =================== Load Face Detection Model (DNN) ===================
-modelFile = "model/res10_300x300_ssd_iter_140000.caffemodel"
-configFile = "deploy.prototxt"
+modelFile = f'{models_dir}/res10_300x300_ssd_iter_140000.caffemodel'
+configFile = f'{models_dir}/deploy.prototxt'
 faceNet = cv2.dnn.readNetFromCaffe(configFile, modelFile)
 
 # =================== Initialize Mediapipe for Facial Landmarks ===================

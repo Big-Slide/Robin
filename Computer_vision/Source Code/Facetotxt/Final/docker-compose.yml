@@ -2,11 +2,10 @@ services:
   queue:
     image: rabbitmq:4.0.6-management
     ports:
-      - ${RABBITMQ_PORT}:5672
       - ${RABBITMQ_MANAGEMENT_PORT}:15672
     volumes:
-      - ../Outputs/rabbitmq_logs:/var/log/rabbitmq
-      - ../Outputs/rabbitmq_data:/var/lib/rabbitmq
+      - ../../../Outputs/FaceToTxt/rabbitmq_logs:/var/log/rabbitmq
+      - ../../../Outputs/FaceToTxt/rabbitmq_data:/var/lib/rabbitmq
       - ./rabbitmq/config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     environment:
       - TZ=Asia/Tehran
@@ -19,7 +18,7 @@ services:
   engine:
     build:
       context: ./engine
-      dockerfile: Dockerfile
+      dockerfile: ./Dockerfile
       args:
         PIP_INDEX_URL: ${PIP_INDEX_URL}
         PIP_EXTRA_INDEX_URL: ${PIP_EXTRA_INDEX_URL}
@@ -28,43 +27,49 @@ services:
         PIP_DISABLE_PIP_VERSION_CHECK: 1
         PIP_NO_CACHE_DIR: 1
         PIP_NO_BINARY: ":all:"
+    command: bash ./cmd.sh
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./engine:/approot/Final
-      - ../Models:/approot/models
-      - ../Outputs:/approot/data
+      - ./engine:/approot/src
+      - ../../../Models/FaceToTxt:/approot/models
+      - ../../../Outputs/FaceToTxt:/approot/data
     environment:
       - TZ=Asia/Tehran
       - MPLCONFIGDIR=/tmp/matplotlib
-      - MODE=${MODE:-production}
+      - MODE
+    user: ${CUID}
     restart: always
     depends_on:
       - queue
+    image: robin-facetotxt-engine:0.0.2
     networks:
       robinnet: null
 
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: ./Dockerfile
       args:
         PIP_INDEX_URL: ${PIP_INDEX_URL}
         PIP_EXTRA_INDEX_URL: ${PIP_EXTRA_INDEX_URL}
         PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST}
         PIP_TIMEOUT: 500
+    command: bash ./cmd.sh
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - ${PORT_BACKEND}:8000
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./backend:/app/backend
-      - ../Outputs:/approot/data
+      - ./backend:/approot/src
+      - ../../../Outputs/FaceToTxt:/approot/data
     environment:
       - TZ=Asia/Tehran
-      - MODE=${MODE:-production}
+      - MODE
+    user: ${CUID}
     restart: always
     depends_on:
       - queue
       - engine
+    image: robin-facetotxt-backend:0.0.2
     networks:
       robinnet: null
       
