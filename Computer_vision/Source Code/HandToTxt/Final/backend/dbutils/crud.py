@@ -38,7 +38,7 @@ def add_request(db: Session, **kwargs):
         db.commit()
         return Message("fa").INF_SUCCESS()
     except IntegrityError as e:
-        if "UNIQUE constraint failed: facetotxt_manager.request_id" in str(e.args):
+        if "UNIQUE constraint failed: hndtotxt_manager.request_id" in str(e.args):
             msg = Message("fa").ERR_DUPLICATE_REQUEST_ID()
             return msg
         else:
