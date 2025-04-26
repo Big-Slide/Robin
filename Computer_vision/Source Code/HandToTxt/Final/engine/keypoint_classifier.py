@@ -12,7 +12,7 @@ else:
 class KeyPointClassifier(object):
     def __init__(
         self,
-        model_path=f'{models_dir}keypoint_classifier.tflite',
+        model_path=f'{models_dir}/keypoint_classifier.tflite',
         num_threads=1,
     ):
         self.interpreter = tf.lite.Interpreter(model_path=model_path,
