@@ -43,7 +43,7 @@ def set_inprogress(request_id: str) -> bool:
             logger.warning(
                 "Webhook-set_inprogress",
                 status_code=response.status_code,
-                response=response.json() if hasattr(response, 'json') else None,
+                content=response.content,
             )
             return False
     except Exception as e:
@@ -88,7 +88,7 @@ def set_completed(request_id: str) -> bool:
             logger.warning(
                 "Webhook-set_completed",
                 status_code=response.status_code,
-                response=response.json() if hasattr(response, 'json') else None,
+                content=response.content,
             )
             return False
     except Exception as e:
@@ -126,7 +126,7 @@ def set_failed(request_id: str) -> bool:
             logger.warning(
                 "Webhook-set_failed",
                 status_code=response.status_code,
-                response=response.json() if hasattr(response, 'json') else None,
+                content=response.content,
             )
             return False
     except Exception as e:
