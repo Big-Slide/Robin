@@ -41,7 +41,7 @@ services:
     restart: always
     depends_on:
       - queue
-    image: robin-handtotxt-engine:0.0.2
+    image: robin-hndtotxt-engine:0.0.2
     networks:
       robinnet: null
 
@@ -69,7 +69,7 @@ services:
     depends_on:
       - queue
       - engine
-    image: robin-handtotxt-backend:0.0.2
+    image: robin-hndtotxt-backend:0.0.2
     networks:
       robinnet: null
 
