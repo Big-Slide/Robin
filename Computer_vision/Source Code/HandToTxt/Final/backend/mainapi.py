@@ -76,7 +76,7 @@ app.add_middleware(
 base_mdl = base.Base()
 
 
-@app.post("/aihive-aihive-hndtotxt/api/v1/image-to-text-offline")
+@app.post("/aihive-hndtotxt/api/v1/image-to-text-offline")
 async def process_image(
         image: UploadFile = File(...),
         request_id: str = Form(None),
