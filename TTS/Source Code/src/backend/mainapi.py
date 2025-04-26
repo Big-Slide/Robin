@@ -19,6 +19,9 @@ import sys
 from starlette.middleware.cors import CORSMiddleware
 from core import base
 from dbutils.database import SessionLocal
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+import pytz
 
 
 if os.environ.get("MODE", "dev") == "prod":
@@ -53,18 +56,27 @@ logger.add(
 logger.info("Starting service", version=__version__)
 
 
-# tasks: Dict[str, schemas.TaskStatus] = {}
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan to start the result consumer."""
     try:
+        # Result queue
         connection = await aio_pika.connect_robust(config["QUEUE_CONNECTION"])
         db = SessionLocal()
         asyncio.create_task(consume_results(connection, db))
+        # Delete unused temp files everyday at 2 AM
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(
+            crud.clean_unused_result_files,
+            trigger=CronTrigger(
+                hour=2, minute=0, timezone=pytz.timezone("Asia/Tehran")
+            ),
+            args=(db,),
+        )
+        scheduler.start()
         yield
     finally:
+        scheduler.shutdown()
         db.close()
         await connection.close()
 
