@@ -1,0 +1,15 @@
+# Large model files
+engine/genderModel_VGG16.hdf5
+engine/model/keypoint_classifier/keypoint.csv
+
+# General large files
+*.hdf5
+*.h5
+*.weights
+*.pt
+*.pth
+*.onnx
+*.pb
+*.tflite
+*.bin
+.idea
