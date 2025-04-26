@@ -22,7 +22,7 @@ RUN python -m pip install --upgrade pip
 RUN pip install --no-cache-dir numpy==1.21.0 && \
     pip install --no-cache-dir opencv-python-headless==4.8.1.78 && \
     pip install --no-cache-dir tensorflow==2.13.0 && \
-    pip install --no-cache-dir mediapipe==0.10.5 &&
+    pip install --no-cache-dir mediapipe==0.10.5
 
 # Copy current directory contents into container
 ADD ./requirements.txt /srv/
