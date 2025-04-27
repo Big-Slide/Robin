@@ -3,9 +3,22 @@ services:
     image: ollama/ollama:0.6.6
     command: ["serve"]
     ports:
-      - "11434:11434"    # Ollama default port
+      - 11434:11434
     volumes:
       - ../../Models/engine:/root/.ollama/models      # Place your `.bin`/model folders here
       - ./config/config.json:/root/.ollama/config.json  # Ollama config
       - ../../Outputs/engine/logs:/root/.ollama/logs          # Logs & state data
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              # count: 1 # alternatively, use `count: all` for all GPUs
+              device_ids: ['0']
+              capabilities: [gpu]
