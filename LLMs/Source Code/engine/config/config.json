@@ -1,0 +1,12 @@
+{
+    "modelDir": "/root/.ollama/models",
+    "autoLoadModels": true,
+    "serve": {
+      "host": "0.0.0.0",
+      "port": 11434
+    },
+    "logging": {
+      "level": "info",
+      "file": "/root/.ollama/logs/ollama.log"
+    }
+  }
