@@ -26,8 +26,8 @@ class Config:
     def __getitem__(self, key):
         return self._config.get(key, None)
 
-    # def __getattribute__(self, name):
-    #     return self._config.get(name, None)
+    def __getattr__(self, name):
+        return self._config.get(name, None)
 
     def get(self, key: str, default_value=None):
         return self._config.get(key, default_value)
