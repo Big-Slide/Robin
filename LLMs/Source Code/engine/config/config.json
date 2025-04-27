@@ -3,7 +3,9 @@
     "autoLoadModels": true,
     "serve": {
       "host": "0.0.0.0",
-      "port": 11434
+      "port": 11434,
+      "keep_alive": -1,
+      "max_queue": 1
     },
     "logging": {
       "level": "info",
