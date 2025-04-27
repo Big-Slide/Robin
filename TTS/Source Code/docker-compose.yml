@@ -66,7 +66,7 @@ services:
     depends_on:
       - queue
       - engine
-    image: robin-tts-backend:0.0.2
+    image: robin-tts-backend:0.0.3
     networks:
       robinnet: null    
 networks:

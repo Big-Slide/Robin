@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 from dbutils import models
 from loguru import logger
 from core.messages import Message
-from datetime import datetime
+from datetime import datetime, timedelta
+from core import utils
 from dbutils.schemas import WebhookStatus
 from typing import Dict
 from sqlalchemy.exc import IntegrityError
@@ -69,3 +70,35 @@ def update_request(
     except Exception:
         logger.opt(exception=True, colors=True).error("Failed to update_request")
         return False
+
+
+def set_webhook_result(db: Session, request_id: str, webhook_status_code: int) -> bool:
+    item = (
+        db.query(models.Manager).filter(models.Manager.request_id == request_id).first()
+    )
+    if item is None:
+        return False
+    item.utime = datetime.now(tz=None)
+    if item.webhook_retry_count is None:
+        item.webhook_retry_count = 0
+    else:
+        item.webhook_retry_count += 1
+    item.webhook_status_code = webhook_status_code
+    try:
+        db.commit()
+        return True
+    except Exception:
+        logger.opt(exception=True, colors=True).error("Failed to set_webhook_result")
+        return False
+
+
+def clean_unused_result_files(db: Session):
+    filepaths = (
+        db.query(models.Manager.result)
+        .filter(models.Manager.status == "completed")
+        .filter(models.Manager.webhook_status_code == 200)
+        .filter(models.Manager.utime < datetime.now() - timedelta(days=7))
+        .all()
+    )
+    for filepath in filepaths:
+        utils.delete_file(filepath[0])
