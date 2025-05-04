@@ -8,12 +8,16 @@ from langchain_core.messages import AIMessage, HumanMessage
 class LLMGenerator:
     def __init__(self):
         self.llm = ChatOllama(
+            base_url=config.CORE_BASE_URL,
             model=config.MODEL_ID,
             temperature=0.3,
             # num_predict=1024,
         )
 
-    async def process_task(self, task: str, input1_path: str, input2_path: str):
+    async def process_pdf(filepath: str) -> str:
+        pass
+
+    async def process_task(self, task: str, input1_path: str, input2_path: str = None):
         if task == "hr_pdf_analysis":
             messages = [
                 (
