@@ -10,7 +10,7 @@ class LLMGenerator:
         self.llm = ChatOllama(
             base_url=config.CORE_BASE_URL,
             model=config.MODEL_ID,
-            temperature=0.3,
+            temperature=config.MODEL_TEMPERATURE,
             # num_predict=1024,
         )
 

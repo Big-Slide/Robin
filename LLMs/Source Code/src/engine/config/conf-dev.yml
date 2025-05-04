@@ -1,5 +1,6 @@
 CONSOLE_LOG_LEVEL: DEBUG
 FILE_LOG_LEVEL: DEBUG
 QUEUE_CONNECTION: amqp://guest:guest@localhost/
-MODEL_ID: deepseek-r1:14b  # qwen3:14b
 CORE_BASE_URL: http://192.168.0.13:11434
+MODEL_ID: deepseek-r1:14b  # qwen3:14b
+MODEL_TEMPERATURE: 0.15
