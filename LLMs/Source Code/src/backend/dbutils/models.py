@@ -26,7 +26,9 @@ class Manager(Base):
 
     id = Column(String(255), primary_key=True, default=generate_uuid)
     request_id = Column(String(255), nullable=False, unique=True)
-    input_path = Column(String(4000), nullable=False)
+    task = Column(String(255), nullable=False)
+    input1_path = Column(String(4000), nullable=False)
+    input2_path = Column(String(4000), nullable=False)
     priority = Column(Integer, nullable=True)
     model = Column(String(255), nullable=True)
     status = Column(Enum(WebhookStatus), nullable=False, default=WebhookStatus.pending)

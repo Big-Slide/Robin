@@ -18,18 +18,18 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                 try:
                     result = json.loads(message.body.decode())
                     request_id = result["request_id"]
-                    text = result.get("text")
+                    data = result.get("data")
                     crud.update_request(
                         db=db,
                         request_id=request_id,
                         status=result["status"],
-                        result=text,
+                        result=data,
                         error=result.get("error"),
                     )
                     # TODO: handle in progress state
                     if result["status"] == "completed":
                         webhook_handler.set_completed(
-                            db=db, request_id=request_id, text=text
+                            db=db, request_id=request_id, data=data
                         )
                     elif result["status"] == "failed":
                         webhook_handler.set_failed(db=db, request_id=request_id)

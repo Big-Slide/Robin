@@ -31,9 +31,9 @@ def set_inprogress(request_id: str) -> bool:
         return False
 
 
-def set_completed(db: Session, request_id: str, text: str) -> bool:
+def set_completed(db: Session, request_id: str, data: dict) -> bool:
     url = base_url + f"/{request_id}"
-    result = {"text": text}
+    result = {"result": data}
     headers = {"Accept": "*/*"}
     params = {"status": WebhookStatus.completed.value, "output": json.dumps(result)}
     response = requests.put(url, params=params, headers=headers)
