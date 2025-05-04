@@ -1,57 +1,35 @@
 from loguru import logger
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
-import torch
-import librosa
 import os
-from typing import Dict
 from config.config_handler import config
+from langchain_ollama import ChatOllama
+from langchain_core.messages import AIMessage, HumanMessage
 
 
-if os.environ.get("MODE", "dev") == "prod":
-    models_dir = "/approot/models"
-else:
-    models_dir = "../../../Models"
-
-models = {"Sharif-wav2vec2": {"model_path": f"{models_dir}/SLPL/Sharif-wav2vec2"}}
-
-
-class ASRGenerator:
+class LLMGenerator:
     def __init__(self):
-        model_id = config.MODEL_ID
-        # Check if GPU is available and set device
-        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logger.info(f"Device: {self._device}")
-        self._load_model(model_id)
+        self.llm = ChatOllama(
+            model=config.MODEL_ID,
+            temperature=0.3,
+            # num_predict=1024,
+        )
 
-    def _load_model(self, model_id: str = "1") -> Dict:
-        # Load model and processor
-        model_path = models[model_id]["model_path"]
-        if os.path.exists(model_path):
-            logger.info("Loading model...", model_id=model_id)
-            self._processor = Wav2Vec2Processor.from_pretrained(model_path)
-            self._model = Wav2Vec2ForCTC.from_pretrained(model_path).to(self._device)
-            self._model.eval()  # Set model to evaluation mode
-            logger.info("Model loaded", model_id=model_id, model_path=model_path)
+    async def process_task(self, task: str, input1_path: str, input2_path: str):
+        if task == "hr_pdf_analysis":
+            messages = [
+                (
+                    "system",
+                    "You are a helpful assistant that translates English to French. Translate the user sentence.",
+                ),
+                ("human", "I love programming."),
+            ]
+            ai_msg = self.llm.ainvoke(messages)
+            return {"text": ai_msg.content}
+        elif task == "pdf_analysis":
+            pass
+        elif task == "hr_pdf_comparison":
+            pass
+        elif task == "hr_analysis_question":
+            pass
         else:
-            logger.warning(
-                "Model not found",
-                model_path=model_path,
-            )
-
-    async def do_asr(self, input_path: str):
-        # Load audio file
-        logger.debug(f"Loading {input_path}")
-        audio, sr = librosa.load(input_path, sr=16000)
-        logger.debug(f"{input_path} loaded")
-        input_values = self._processor(
-            audio, sampling_rate=sr, return_tensors="pt", padding=True
-        ).input_values.to(self._device)
-        logger.debug("Input values ready")
-        with torch.no_grad():
-            logits = self._model(input_values).logits
-        logger.debug("Logits ready")
-        predicted_ids = torch.argmax(logits, dim=-1)
-        logger.debug("predictions ready")
-        transcription = self._processor.batch_decode(predicted_ids)[0]
-        logger.debug(f"{transcription=}")
-        return transcription
+            pass
+        return {}

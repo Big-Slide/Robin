@@ -28,7 +28,7 @@ class Manager(Base):
     request_id = Column(String(255), nullable=False, unique=True)
     task = Column(String(255), nullable=False)
     input1_path = Column(String(4000), nullable=False)
-    input2_path = Column(String(4000), nullable=False)
+    input2_path = Column(String(4000), nullable=True)
     priority = Column(Integer, nullable=True)
     model = Column(String(255), nullable=True)
     status = Column(Enum(WebhookStatus), nullable=False, default=WebhookStatus.pending)

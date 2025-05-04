@@ -1,4 +1,4 @@
-from generators import ASRGenerator
+from generators import LLMGenerator
 import aio_pika
 import json
 from loguru import logger
@@ -7,27 +7,31 @@ from loguru import logger
 async def process_message(
     message: aio_pika.IncomingMessage,
     result_channel: aio_pika.Channel,
-    asr_generator: ASRGenerator,
+    llm_generator: LLMGenerator,
 ):
     async with message.process():
         try:
             # Parse the message body
             message_body = json.loads(message.body.decode())
-            input_path = message_body["input_path"]
+            task = message_body["task"]
+            input1_path = message_body["input1_path"]
+            input2_path = message_body["input2_path"]
             request_id = message_body["request_id"]
 
             logger.info(
                 "Processing task",
                 request_id=request_id,
-                input_path=input_path,
+                task=task,
+                input1_path=input1_path,
+                input2_path=input2_path,
             )
             # TODO: mark task as in progress
-            text = await asr_generator.do_asr(input_path)
+            result_details = await llm_generator.process_task(task, input1_path, input2_path)
 
             result = {
                 "request_id": request_id,
                 "status": "completed",
-                "text": text,
+                "data": result_details,
             }
             logger.debug(f"{result=}")
         except Exception as e:
