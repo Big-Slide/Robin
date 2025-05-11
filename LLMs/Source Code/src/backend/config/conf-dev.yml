@@ -1,0 +1,6 @@
+CONSOLE_LOG_LEVEL: DEBUG
+FILE_LOG_LEVEL: DEBUG
+QUEUE_CONNECTION: amqp://guest:guest@localhost/
+DB_CONNECTION: sqlite:///../../../Outputs/database/db.sql
+DB_DIR: ../../../Outputs/database
+AIHIVE_ADDR: http://api.robin-co.com  # webhook base address
