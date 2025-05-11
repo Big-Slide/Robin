@@ -19,11 +19,12 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                     result = json.loads(message.body.decode())
                     request_id = result["request_id"]
                     data = result.get("data")
+                    logger.debug(f"{data=}")
                     crud.update_request(
                         db=db,
                         request_id=request_id,
                         status=result["status"],
-                        result=data,
+                        result=str(data),
                         error=result.get("error"),
                     )
                     # TODO: handle in progress state

@@ -41,7 +41,8 @@ class LLMGenerator:
             #     ),
             #     ("human", "I love programming."),
             # ]
-            ai_msg = await self.llm.ainvoke(messages)
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
             return {"text": ai_msg.content}
         elif task == "pdf_analysis":
             pass
