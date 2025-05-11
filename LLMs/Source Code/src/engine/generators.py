@@ -26,7 +26,7 @@ class LLMGenerator:
 
     async def process_task(self, task: str, input1_path: str, input2_path: str = None):
         if task == "hr_pdf_analysis":
-            pdf_text = self.process_pdf(input1_path)
+            pdf_text = await self.process_pdf(input1_path)
             messages = [
                 (
                     "system",
