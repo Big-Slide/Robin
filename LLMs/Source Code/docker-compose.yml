@@ -37,6 +37,8 @@ services:
               # count: 1 # alternatively, use `count: all` for all GPUs
               device_ids: ['0']
               capabilities: [gpu]
+    networks:
+      robinnet: null
   engine:
     build:
       context: ./src/engine
