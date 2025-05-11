@@ -38,14 +38,14 @@ logger.add(
 
 logger.info("Starting service...", version=__version__)
 
-from generators import ASRGenerator
+from generators import LLMGenerator
 import aio_pika
 import asyncio
 from core.queue_utils import process_message
 
 
 async def main():
-    asr_generator = ASRGenerator()
+    llm_generator = LLMGenerator()
     connection = await aio_pika.connect_robust(config["QUEUE_CONNECTION"])
 
     # Create separate channels for consuming and publishing
@@ -57,7 +57,7 @@ async def main():
 
     # Start consuming tasks
     await task_queue.consume(
-        lambda message: process_message(message, result_channel, asr_generator)
+        lambda message: process_message(message, result_channel, llm_generator)
     )
 
     # Keep connection alive
