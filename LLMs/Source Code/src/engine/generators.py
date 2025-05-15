@@ -6,6 +6,7 @@ from typing import Union, Dict
 
 # from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 import PyPDF2
+from core.cv_generator import CVGenerator
 
 
 class LLMGenerator:
@@ -17,6 +18,7 @@ class LLMGenerator:
             num_predict=config.MODEL_NUM_PREDICT,
             top_p=config.MODEL_TOP_P,
         )
+        self.cv_generator = CVGenerator(self.llm)
 
     async def process_pdf(self, filepath: str) -> str:
         pdf_content = ""
@@ -32,6 +34,7 @@ class LLMGenerator:
         input1_path: str = None,
         input2_path: str = None,
         input_params: Dict = None,
+        output_path: str = None,
     ) -> Union[str, str]:
         if task == "hr_pdf_analysis":
             pdf_text = await self.process_pdf(input1_path)
@@ -52,8 +55,13 @@ class LLMGenerator:
         elif task == "hr_analysis_question":
             pass
         elif task == "cv_generate":
-            # TODO
-            return None, "todo"
+            user_data = {}
+            for question, response in input_params.items():
+                if question in ["request_id", "priority"]:
+                    user_data[question] = response.strip()
+            cv_content = self.cv_generator.generate_cv_content(user_data)
+            self.cv_generator.create_pdf_cv(cv_content, output_path)
+            return None, output_path
         else:
             pass
         return {}

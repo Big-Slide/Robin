@@ -3,7 +3,7 @@ import re
 import unicodedata
 import os
 
-os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+# os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 from datetime import datetime
 
 from reportlab.lib.pagesizes import letter
@@ -13,39 +13,21 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph, Frame
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY
+from loguru import logger
 
-ROBIN_LLM_ADDR = "http://46.34.178.172:11434"
 
 class CVGenerator:
-    def __init__(self):
-        self.llm = ChatOllama(
-            base_url=ROBIN_LLM_ADDR,
-            model="deepseek-r1:14b",
-            temperature=0.7,
-            num_predict=1024,
-            top_p=0.92,
-        )
+    def __init__(self, llm: ChatOllama):
+        self.llm = llm
 
-    def generate_clean_response(self, prompt: str, max_tokens=220):
+    def generate_clean_response(self, prompt: str):
         """Generate clean text response without code/markdown/test artifacts."""
         system_warning = (
             "INSTRUCTIONS: Write ONLY the answer in clear, professional English prose. "
             "DO NOT include any Python code, lists, tests, docstrings, or technical instructions of ANY kind. "
             "No headers, no comments, only pure CV text."
         )
-        # prompt = f"{system_warning}\n\n{prompt.strip()}\n"
         try:
-            # inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
-            # outputs = self.model.generate(
-            #     **inputs,
-            #     max_new_tokens=max_tokens,
-            #     temperature=0.7,
-            #     do_sample=True,
-            #     top_p=0.92,
-            #     pad_token_id=self.tokenizer.eos_token_id
-            # )
-            # response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # text = response.split(prompt)[-1].strip()
             messages = [
                 (
                     "system",
@@ -56,7 +38,7 @@ class CVGenerator:
             ai_msg = self.llm.invoke(messages)
             return self.aggressive_clean(ai_msg.content)
         except Exception as e:
-            print(f"Generation error: {e}")
+            logger.error(f"Generation error: {e}")
             return ""
 
     def aggressive_clean(self, text):
@@ -168,7 +150,7 @@ class CVGenerator:
 
         cv = {"name": user_data["full_name"]}
         for section, prompt in templates.items():
-            print(f"Generating {section}...")
+            logger.debug(f"Generating {section}...")
             cv[section] = self.generate_clean_response(prompt)
 
         # Generate contact info from user input
@@ -196,11 +178,12 @@ class CVGenerator:
             contact_lines.append(f"Portfolio: {portfolio}")
         return "\n".join(contact_lines)
 
-    def create_pdf_cv(self, cv_content):
+    def create_pdf_cv(self, cv_content, output_path: str = None):
         """Create a professional PDF CV with wrapped text in bordered boxes and no duplicated skills."""
 
-        pdf_file = f"{cv_content['name'].replace(' ', '_')}_CV.pdf"
-        c = canvas.Canvas(pdf_file, pagesize=letter)
+        if output_path is None:
+            output_path = f"{cv_content['name'].replace(' ', '_')}_CV.pdf"
+        c = canvas.Canvas(output_path, pagesize=letter)
         width, height = letter
 
         # Colors and styling
@@ -376,12 +359,12 @@ class CVGenerator:
         )
 
         c.save()
-        print(f"\nProfessional CV saved as: {pdf_file}")
-        return pdf_file
+        logger.debug(f"\nProfessional CV saved as: {output_path}")
+        return output_path
 
 
 def main():
-    print("=== AI-Powered CV Generator ===")
+    logger.debug("=== AI-Powered CV Generator ===")
 
     # Initialize with your model path
     generator = CVGenerator()
@@ -390,16 +373,16 @@ def main():
     user_data = generator.get_user_input()
 
     # Generate CV content
-    print("\nGenerating your professional CV...")
+    logger.debug("\nGenerating your professional CV...")
     cv_content = generator.generate_cv_content(user_data)
 
     # Create PDF
     generator.create_pdf_cv(cv_content)
 
     # Preview content
-    print("\n=== Generated CV Content ===")
+    logger.debug("\n=== Generated CV Content ===")
     for section, content in cv_content.items():
-        print(f"\n{section.upper()}:\n{content}")
+        logger.debug(f"\n{section.upper()}:\n{content}")
 
 
 if __name__ == "__main__":

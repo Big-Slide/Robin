@@ -320,6 +320,8 @@ async def cv_generate_offline(
     logger.info("request cv_generate_offline", request_id=items.request_id)
     if items.request_id is None:
         request_id = str(uuid.uuid4())
+    else:
+        request_id = items.request_id
 
     response = crud.add_request(
         db=db,
@@ -336,7 +338,7 @@ async def cv_generate_offline(
     message_body = {
         "task": "cv_generate",
         "input_params": items,
-        "request_id": items.request_id,
+        "request_id": request_id,
     }
 
     await channel.default_exchange.publish(
