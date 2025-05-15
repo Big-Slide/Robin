@@ -59,7 +59,9 @@ class LLMGenerator:
             logger.critical(input_params)
             for question, response in input_params.items():
                 logger.warning(question, response)
-                user_data[question] = response.strip()
+                if type(response) is str:
+                    response = response.strip()
+                user_data[question] = response
             cv_content = self.cv_generator.generate_cv_content(user_data)
             self.cv_generator.create_pdf_cv(cv_content, output_path)
             return None, output_path
