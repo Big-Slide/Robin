@@ -5,7 +5,7 @@ ARG PIP_TIMEOUT=500
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive \
-    && apt-get install -y curl dnsutils libaio1 \
+    && apt-get install -y curl dnsutils libaio1 ffmpeg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 RUN python -m pip install --upgrade pip
