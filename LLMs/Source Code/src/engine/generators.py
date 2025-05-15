@@ -56,7 +56,9 @@ class LLMGenerator:
             pass
         elif task == "cv_generate":
             user_data = {}
+            logger.critical(input_params)
             for question, response in input_params.items():
+                logger.warning(question, response)
                 user_data[question] = response.strip()
             cv_content = self.cv_generator.generate_cv_content(user_data)
             self.cv_generator.create_pdf_cv(cv_content, output_path)
