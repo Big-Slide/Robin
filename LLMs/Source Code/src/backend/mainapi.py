@@ -327,7 +327,9 @@ async def cv_generate_offline(
         db=db,
         request_id=request_id,
         task="cv_generate",
-        input_params=json.dumps(items).encode(),
+        input_params=json.dumps(
+            items.model_dump(exclude={"request_id", "priority"})
+        ).encode(),
         itime=datetime.now(tz=None),
     )
     if not response["status"]:
@@ -337,7 +339,7 @@ async def cv_generate_offline(
 
     message_body = {
         "task": "cv_generate",
-        "input_params": items,
+        "input_params": items.model_dump(exclude={"request_id", "priority"}),
         "request_id": request_id,
     }
 
