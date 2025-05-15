@@ -14,9 +14,10 @@ async def process_message(
             # Parse the message body
             message_body = json.loads(message.body.decode())
             task = message_body["task"]
-            input1_path = message_body["input1_path"]
-            input2_path = message_body["input2_path"]
             request_id = message_body["request_id"]
+            input1_path = message_body.get("input1_path", None)
+            input2_path = message_body.get("input2_path", None)
+            input_params = message_body.get("input_params", None)
 
             logger.info(
                 "Processing task",
@@ -24,14 +25,18 @@ async def process_message(
                 task=task,
                 input1_path=input1_path,
                 input2_path=input2_path,
+                input_params=input_params,
             )
             # TODO: mark task as in progress
-            result_details = await llm_generator.process_task(task, input1_path, input2_path)
+            result_data, result_path = await llm_generator.process_task(
+                task, input1_path, input2_path, input_params
+            )
 
             result = {
                 "request_id": request_id,
                 "status": "completed",
-                "data": result_details,
+                "result_data": result_data,
+                "result_path": result_path,
             }
             logger.debug(f"{result=}")
         except Exception as e:

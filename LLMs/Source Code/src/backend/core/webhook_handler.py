@@ -10,6 +10,18 @@ from sqlalchemy.orm import Session
 base_url = f"{config['AIHIVE_ADDR']}/api/Request"
 
 
+def get_file(db: Session, request_id: str):
+    task = crud.get_request(db=db, request_id=request_id)
+    if not task:
+        return None
+    if task.status == WebhookStatus.completed and task.result_path is not None:
+        return open(task.result_path, "rb")
+
+
+def get_file_by_path(filepath: str):
+    return open(filepath, "rb")
+
+
 def set_inprogress(request_id: str) -> bool:
     url = base_url + f"/{request_id}"
     headers = {"Accept": "*/*"}
@@ -31,12 +43,21 @@ def set_inprogress(request_id: str) -> bool:
         return False
 
 
-def set_completed(db: Session, request_id: str, data: dict) -> bool:
+def set_completed(db: Session, request_id: str, result_data: str = None) -> bool:
     url = base_url + f"/{request_id}"
-    result = {"result": data}
     headers = {"Accept": "*/*"}
-    params = {"status": WebhookStatus.completed.value, "output": json.dumps(result)}
-    response = requests.put(url, params=params, headers=headers)
+    if result_data:
+        result = {"result": result_data}
+        params = {"status": WebhookStatus.completed.value, "output": json.dumps(result)}
+        response = requests.put(url, params=params, headers=headers)
+    else:
+        params = {"status": WebhookStatus.completed.value, "output": "{}"}
+        response = requests.put(
+            url,
+            params=params,
+            headers=headers,
+            files={"outputFile": get_file(db, request_id)},
+        )
     crud.set_webhook_result(
         db=db, request_id=request_id, webhook_status_code=response.status_code
     )
