@@ -25,7 +25,7 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                         db=db,
                         request_id=request_id,
                         status=result["status"],
-                        result=result_data,
+                        result_data=result_data,
                         result_path=result_path,
                         error=result.get("error"),
                     )

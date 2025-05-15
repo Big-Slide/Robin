@@ -57,8 +57,7 @@ class LLMGenerator:
         elif task == "cv_generate":
             user_data = {}
             for question, response in input_params.items():
-                if question in ["request_id", "priority"]:
-                    user_data[question] = response.strip()
+                user_data[question] = response.strip()
             cv_content = self.cv_generator.generate_cv_content(user_data)
             self.cv_generator.create_pdf_cv(cv_content, output_path)
             return None, output_path
