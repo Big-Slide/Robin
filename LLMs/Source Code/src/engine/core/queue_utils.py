@@ -37,7 +37,7 @@ async def process_message(
             # TODO: mark task as in progress
             output_path = None
             if input_params:
-                output_path = f"{output_dir}/{request_id}.wav"
+                output_path = f"{output_dir}/{request_id}.pdf"
 
             result_data, result_path = await llm_generator.process_task(
                 task, input1_path, input2_path, input_params, output_path

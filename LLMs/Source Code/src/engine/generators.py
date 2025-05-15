@@ -56,9 +56,7 @@ class LLMGenerator:
             pass
         elif task == "cv_generate":
             user_data = {}
-            logger.critical(input_params)
             for question, response in input_params.items():
-                logger.warning(question, response)
                 if type(response) is str:
                     response = response.strip()
                 user_data[question] = response
