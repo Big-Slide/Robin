@@ -363,27 +363,27 @@ class CVGenerator:
         return output_path
 
 
-def main():
-    logger.debug("=== AI-Powered CV Generator ===")
+# def main():
+#     logger.debug("=== AI-Powered CV Generator ===")
 
-    # Initialize with your model path
-    generator = CVGenerator()
-    # generator = CVGenerator(r"D:\dsmodel\models--deepseek-ai--DeepSeek-V2\snapshots\4461458f186c35188585855f28f77af5661ad489")
-    # Get user input
-    user_data = generator.get_user_input()
+#     # Initialize with your model path
+#     generator = CVGenerator()
+#     # generator = CVGenerator(r"D:\dsmodel\models--deepseek-ai--DeepSeek-V2\snapshots\4461458f186c35188585855f28f77af5661ad489")
+#     # Get user input
+#     user_data = generator.get_user_input()
 
-    # Generate CV content
-    logger.debug("\nGenerating your professional CV...")
-    cv_content = generator.generate_cv_content(user_data)
+#     # Generate CV content
+#     logger.debug("\nGenerating your professional CV...")
+#     cv_content = generator.generate_cv_content(user_data)
 
-    # Create PDF
-    generator.create_pdf_cv(cv_content)
+#     # Create PDF
+#     generator.create_pdf_cv(cv_content)
 
-    # Preview content
-    logger.debug("\n=== Generated CV Content ===")
-    for section, content in cv_content.items():
-        logger.debug(f"\n{section.upper()}:\n{content}")
+#     # Preview content
+#     logger.debug("\n=== Generated CV Content ===")
+#     for section, content in cv_content.items():
+#         logger.debug(f"\n{section.upper()}:\n{content}")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
