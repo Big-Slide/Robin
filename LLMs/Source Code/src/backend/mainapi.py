@@ -327,7 +327,7 @@ async def cv_generate_offline(
         db=db,
         request_id=request_id,
         task="cv_generate",
-        input_params=items,
+        input_params=json.dumps(items).encode(),
         itime=datetime.now(tz=None),
     )
     if not response["status"]:
