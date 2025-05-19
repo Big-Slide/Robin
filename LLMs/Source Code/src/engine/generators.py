@@ -52,7 +52,7 @@ class LLMGenerator:
             if json_match:
                 json_str = json_match.group()
                 try:
-                    return json.loads(json_str)
+                    return json.dumps(json.loads(json_str), separators=(",", ":"))
                 except json.JSONDecodeError as e:
                     raise ValueError("Found JSON block but could not parse it.") from e
             raise ValueError("No JSON object found in the response.")
@@ -101,7 +101,7 @@ class LLMGenerator:
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             try:
-                resp = str(self._extract_json_from_response(ai_msg.content))
+                resp = self._extract_json_from_response(ai_msg.content)
             except Exception as e:
                 logger.opt(exception=False).warning(
                     "Failed to parse response to json", e=e.args
