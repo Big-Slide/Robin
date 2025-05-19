@@ -4,6 +4,8 @@ from langchain_ollama import ChatOllama
 from typing import Union, Dict
 import PyPDF2
 from core.cv_generator import CVGenerator
+import json
+import re
 
 
 class LLMGenerator:
@@ -35,6 +37,25 @@ class LLMGenerator:
             for page in pdf_reader.pages:
                 pdf_content += page.extract_text() + "\n"
         return pdf_content
+
+    def _extract_json_from_response(self, response_text):
+        """
+        Extracts a JSON object from a text response.
+        Assumes the JSON is enclosed in curly braces {} or a code block.
+        """
+        try:
+            # Try to directly parse if the whole response is JSON
+            return json.loads(response_text)
+        except json.JSONDecodeError:
+            # Fallback: Extract the first JSON-like block from the text
+            json_match = re.search(r"\{[\s\S]*\}", response_text)
+            if json_match:
+                json_str = json_match.group()
+                try:
+                    return json.loads(json_str)
+                except json.JSONDecodeError as e:
+                    raise ValueError("Found JSON block but could not parse it.") from e
+            raise ValueError("No JSON object found in the response.")
 
     async def process_task(
         self,
@@ -79,7 +100,12 @@ class LLMGenerator:
             ]
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
-            return ai_msg.content, None
+            try:
+                resp = self._extract_json_from_response(ai_msg.content)
+            except Exception:
+                logger.opt(exception=True).error("Failed to parse response to json")
+                resp = ai_msg.content
+            return resp, None
         elif task == "pdf_analysis":
             pass
         elif task == "hr_pdf_comparison":
