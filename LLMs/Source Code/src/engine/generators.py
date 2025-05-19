@@ -1,10 +1,7 @@
 from loguru import logger
-import os
 from config.config_handler import config
 from langchain_ollama import ChatOllama
 from typing import Union, Dict
-
-# from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 import PyPDF2
 from core.cv_generator import CVGenerator
 
@@ -77,7 +74,28 @@ class LLMGenerator:
             self.cv_generator.create_pdf_cv(cv_content, output_path)
             return None, output_path
         elif task == "chat":
-            pass
+            prompt = input_params["prompt"]
+            messages = [
+                (
+                    "system",
+                    """
+                        You are ZenonBot, an intelligent and helpful assistant developed by Zenon Robotics. Your role is to provide accurate, relevant, and clear information in response to any user prompt.
+                        You should always:
+                            - Respond in the same language used in the user's prompt.
+                            - Maintain a professional, friendly, and knowledgeable tone.
+                            - Be helpful across a wide range of topics, especially robotics, automation, AI, and company-specific services.
+                            - Clarify ambiguous requests with thoughtful follow-up questions.
+                            - Respond concisely, unless more detail is clearly requested.
+                            - Uphold Zenon Robotics' commitment to innovation, safety, and customer satisfaction.
+                        If a question involves sensitive or confidential information, politely decline and suggest contacting an official Zenon Robotics representative.
+                        When appropriate, include examples, analogies, or step-by-step explanations to improve clarity. Always aim to solve the user's problem or guide them to the best next step.
+                    """,
+                ),
+                ("human", f":\n\n{prompt}"),
+            ]
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
         else:
             pass
         return {}

@@ -59,3 +59,13 @@ class vm_request_cv_generator(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class vm_request_chat(BaseModel):
+    request_id: str
+    priority: int = 1
+    model: str = None
+    prompt: str
+
+    class Config:
+        from_attributes = True
