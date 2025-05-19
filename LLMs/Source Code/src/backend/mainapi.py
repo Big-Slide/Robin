@@ -99,10 +99,11 @@ async def hr_pdf_analysis(
     file: UploadFile,
     request_id: str = None,
     priority: int = 1,
+    model: str = None,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    logger.info("request hr_pdf_analysis", request_id=request_id)
+    logger.info("request hr_pdf_analysis", request_id=request_id, model=model)
     if request_id is None:
         request_id = str(uuid.uuid4())
 
@@ -114,6 +115,7 @@ async def hr_pdf_analysis(
     response = crud.add_request(
         db=db,
         request_id=request_id,
+        model=model,
         task="hr_pdf_analysis",
         input1_path=input1_path,
         itime=datetime.now(tz=None),
@@ -131,6 +133,7 @@ async def hr_pdf_analysis(
         "input1_path": input1_path,
         "input2_path": None,
         "request_id": request_id,
+        "model": model,
     }
 
     await channel.default_exchange.publish(
@@ -152,10 +155,11 @@ async def pdf_analysis(
     file: UploadFile,
     request_id: str = None,
     priority: int = 1,
+    model: str = None,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    logger.info("request pdf_analysis", request_id=request_id)
+    logger.info("request pdf_analysis", request_id=request_id, model=model)
     if request_id is None:
         request_id = str(uuid.uuid4())
 
@@ -167,6 +171,7 @@ async def pdf_analysis(
     response = crud.add_request(
         db=db,
         request_id=request_id,
+        model=model,
         task="pdf_analysis",
         input1_path=input1_path,
         itime=datetime.now(tz=None),
@@ -184,6 +189,7 @@ async def pdf_analysis(
         "input1_path": input1_path,
         "input2_path": None,
         "request_id": request_id,
+        "model": model,
     }
 
     await channel.default_exchange.publish(
@@ -206,10 +212,11 @@ async def hr_pdf_comparison(
     file2: UploadFile,
     request_id: str = None,
     priority: int = 1,
+    model: str = None,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    logger.info("request hr_pdf_comparison", request_id=request_id)
+    logger.info("request hr_pdf_comparison", request_id=request_id, model=model)
     if request_id is None:
         request_id = str(uuid.uuid4())
 
@@ -242,6 +249,7 @@ async def hr_pdf_comparison(
         "input1_path": input1_path,
         "input2_path": input2_path,
         "request_id": request_id,
+        "model": model,
     }
 
     await channel.default_exchange.publish(
@@ -263,10 +271,11 @@ async def hr_analysis_question(
     file: UploadFile,
     request_id: str = None,
     priority: int = 1,
+    model: str = None,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    logger.info("request hr_analysis_question", request_id=request_id)
+    logger.info("request hr_analysis_question", request_id=request_id, model=model)
     if request_id is None:
         request_id = str(uuid.uuid4())
 
@@ -295,6 +304,7 @@ async def hr_analysis_question(
         "input1_path": input1_path,
         "input2_path": None,
         "request_id": request_id,
+        "model": model,
     }
 
     await channel.default_exchange.publish(
@@ -328,7 +338,7 @@ async def cv_generate_offline(
         request_id=request_id,
         task="cv_generate",
         input_params=json.dumps(
-            items.model_dump(exclude={"request_id", "priority"})
+            items.model_dump(exclude={"request_id", "priority", "model"})
         ).encode(),
         itime=datetime.now(tz=None),
     )
@@ -339,8 +349,56 @@ async def cv_generate_offline(
 
     message_body = {
         "task": "cv_generate",
-        "input_params": items.model_dump(exclude={"request_id", "priority"}),
+        "input_params": items.model_dump(exclude={"request_id", "priority", "model"}),
         "request_id": request_id,
+        "model": items.model,
+    }
+
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=json.dumps(message_body).encode(),
+            headers={"request_id": request_id},
+        ),
+        routing_key="task_queue",
+    )
+    await channel.close()
+
+    msg = Message("en").INF_SUCCESS()
+    msg["data"] = {"request_id": request_id}
+    return msg
+
+
+@app.post("/aihive-llm/api/v1/chat/txt-to-txt-offline")
+async def chat(
+    items: schemas.vm_request_chat,
+    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
+    db: Session = Depends(base.get_db),
+):
+    logger.info("request chat", request_id=items.request_id)
+    if items.request_id is None:
+        request_id = str(uuid.uuid4())
+    else:
+        request_id = items.request_id
+
+    response = crud.add_request(
+        db=db,
+        request_id=request_id,
+        task="cv_generate",
+        input_params=json.dumps(
+            items.model_dump(exclude={"request_id", "priority", "model"})
+        ).encode(),
+        itime=datetime.now(tz=None),
+    )
+    if not response["status"]:
+        return response
+
+    channel = await connection.channel()
+
+    message_body = {
+        "task": "chat",
+        "input_params": items.model_dump(exclude={"request_id", "priority", "model"}),
+        "request_id": request_id,
+        "model": items.model,
     }
 
     await channel.default_exchange.publish(

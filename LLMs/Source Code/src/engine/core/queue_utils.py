@@ -25,6 +25,7 @@ async def process_message(
             input1_path = message_body.get("input1_path", None)
             input2_path = message_body.get("input2_path", None)
             input_params = message_body.get("input_params", None)
+            model = message_body.get("model", None)
 
             logger.info(
                 "Processing task",
@@ -33,6 +34,7 @@ async def process_message(
                 input1_path=input1_path,
                 input2_path=input2_path,
                 input_params=input_params,
+                model=model,
             )
             # TODO: mark task as in progress
             output_path = None
@@ -40,7 +42,7 @@ async def process_message(
                 output_path = f"{output_dir}/{request_id}.pdf"
 
             result_data, result_path = await llm_generator.process_task(
-                task, input1_path, input2_path, input_params, output_path
+                task, input1_path, input2_path, input_params, output_path, model=model
             )
 
             result = {
