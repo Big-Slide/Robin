@@ -52,7 +52,12 @@ def add_request(db: Session, **kwargs):
 
 
 def update_request(
-    db: Session, request_id: str, status: WebhookStatus, result: Dict, error: str = None
+    db: Session,
+    request_id: str,
+    status: WebhookStatus,
+    result_data: str = None,
+    result_path: str = None,
+    error: str = None,
 ):
     item = (
         db.query(models.Manager).filter(models.Manager.request_id == request_id).first()
@@ -61,7 +66,10 @@ def update_request(
         return False
     item.utime = datetime.now(tz=None)
     item.status = status
-    item.result = result
+    if result_data:
+        item.result = result_data
+    if result_path:
+        item.result_path = result_path
     if error is not None:
         item.error = error
     try:

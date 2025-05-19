@@ -7,3 +7,4 @@ aio-pika==9.5.4
 loguru==0.7.3
 langchain-ollama==0.3.2
 PyPDF2==3.0.1
+reportlab==4.4.1

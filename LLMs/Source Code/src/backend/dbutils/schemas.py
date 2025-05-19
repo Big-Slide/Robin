@@ -35,3 +35,26 @@ class vm_response(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class vm_request_cv_generator(BaseModel):
+    request_id: str
+    priority: int = 1
+    full_name: str
+    target_role: str
+    years_exp: int
+    current_position: str
+    current_company: str
+    key_skills: str
+    education: str
+    certifications: str
+    achievement: str
+    languages: str
+    email: str
+    phone: str
+    linkedin: str
+    address: Optional[str] = None
+    portfolio: Optional[str] = None
+
+    class Config:
+        from_attributes = True

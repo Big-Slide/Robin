@@ -2,6 +2,13 @@ from generators import LLMGenerator
 import aio_pika
 import json
 from loguru import logger
+import os
+
+if os.environ.get("MODE", "dev") == "prod":
+    output_dir = "/approot/data/result"
+else:
+    output_dir = "../../../Outputs/result"
+os.makedirs(output_dir, exist_ok=True)
 
 
 async def process_message(
@@ -14,9 +21,10 @@ async def process_message(
             # Parse the message body
             message_body = json.loads(message.body.decode())
             task = message_body["task"]
-            input1_path = message_body["input1_path"]
-            input2_path = message_body["input2_path"]
             request_id = message_body["request_id"]
+            input1_path = message_body.get("input1_path", None)
+            input2_path = message_body.get("input2_path", None)
+            input_params = message_body.get("input_params", None)
 
             logger.info(
                 "Processing task",
@@ -24,17 +32,27 @@ async def process_message(
                 task=task,
                 input1_path=input1_path,
                 input2_path=input2_path,
+                input_params=input_params,
             )
             # TODO: mark task as in progress
-            result_details = await llm_generator.process_task(task, input1_path, input2_path)
+            output_path = None
+            if input_params:
+                output_path = f"{output_dir}/{request_id}.pdf"
+
+            result_data, result_path = await llm_generator.process_task(
+                task, input1_path, input2_path, input_params, output_path
+            )
 
             result = {
                 "request_id": request_id,
                 "status": "completed",
-                "data": result_details,
+                "result_data": result_data,
+                "result_path": result_path,
             }
             logger.debug(f"{result=}")
         except Exception as e:
+            if output_path and os.path.exists(output_path):
+                os.remove(output_path)
             logger.exception(e)
             result = {"request_id": request_id, "status": "failed", "error": str(e)}
 

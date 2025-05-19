@@ -13,7 +13,7 @@ import os
 from version import __version__
 from config.config_handler import config
 from core.queue_utils import consume_results, get_rabbitmq_connection
-from dbutils import crud
+from dbutils import crud, schemas
 import sys
 from starlette.middleware.cors import CORSMiddleware
 from core import base
@@ -294,6 +294,52 @@ async def hr_analysis_question(
         "task": "hr_analysis_question",
         "input1_path": input1_path,
         "input2_path": None,
+        "request_id": request_id,
+    }
+
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=json.dumps(message_body).encode(),
+            headers={"request_id": request_id},
+        ),
+        routing_key="task_queue",
+    )
+    await channel.close()
+
+    msg = Message("en").INF_SUCCESS()
+    msg["data"] = {"request_id": request_id}
+    return msg
+
+
+@app.post("/aihive-llm/api/v1/cvgenerate/txt-to-pdf-offline")
+async def cv_generate_offline(
+    items: schemas.vm_request_cv_generator,
+    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
+    db: Session = Depends(base.get_db),
+):
+    logger.info("request cv_generate_offline", request_id=items.request_id)
+    if items.request_id is None:
+        request_id = str(uuid.uuid4())
+    else:
+        request_id = items.request_id
+
+    response = crud.add_request(
+        db=db,
+        request_id=request_id,
+        task="cv_generate",
+        input_params=json.dumps(
+            items.model_dump(exclude={"request_id", "priority"})
+        ).encode(),
+        itime=datetime.now(tz=None),
+    )
+    if not response["status"]:
+        return response
+
+    channel = await connection.channel()
+
+    message_body = {
+        "task": "cv_generate",
+        "input_params": items.model_dump(exclude={"request_id", "priority"}),
         "request_id": request_id,
     }
 
