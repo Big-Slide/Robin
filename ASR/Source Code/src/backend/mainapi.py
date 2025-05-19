@@ -97,12 +97,13 @@ base_mdl = base.Base()
 @app.post("/aihive-sptotxt/api/v1/speech-to-text-offline")
 async def speech_to_text(
     audio_file: UploadFile,
+    lang: str = "fa",
     request_id: str = None,
     priority: int = 1,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    logger.info("/asr/speech-to-text-offline", request_id=request_id)
+    logger.info("/asr/speech-to-text-offline", request_id=request_id, lang=lang)
     if request_id is None:
         request_id = str(uuid.uuid4())
 
@@ -115,6 +116,7 @@ async def speech_to_text(
         db=db,
         request_id=request_id,
         input_path=input_path,
+        lang=lang,
         itime=datetime.now(tz=None),
     )
     if not response["status"]:
@@ -126,10 +128,7 @@ async def speech_to_text(
 
     # Prepare message with text, model, and request_id
     # TODO: change input_path to binary data (be aware of 16k frequency conversion!)
-    message_body = {
-        "input_path": input_path,
-        "request_id": request_id,
-    }
+    message_body = {"input_path": input_path, "request_id": request_id, "lang": lang}
 
     await channel.default_exchange.publish(
         aio_pika.Message(

@@ -12,25 +12,40 @@ if os.environ.get("MODE", "dev") == "prod":
 else:
     models_dir = "../../../Models"
 
-models = {"Sharif-wav2vec2": {"model_path": f"{models_dir}/SLPL/Sharif-wav2vec2"}}
+models = {
+    "Sharif-wav2vec2": {
+        "model_path": f"{models_dir}/SLPL/Sharif-wav2vec2",
+        "lang": "fa",
+    },
+    "facebook/wav2vec2-base-960h": {
+        "model_path": f"{models_dir}/facebook/wav2vec2-base-960h",
+        "lang": "en",
+    },
+}
 
 
 class ASRGenerator:
     def __init__(self):
-        model_id = config.MODEL_ID
+        model_ids = config.MODEL_IDs
         # Check if GPU is available and set device
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.info(f"Device: {self._device}")
-        self._load_model(model_id)
+        self._processor = {}
+        self._model = {}
+        for model_id in model_ids.split(","):
+            self._load_model(model_id)
 
-    def _load_model(self, model_id: str = "1") -> Dict:
+    def _load_model(self, model_id: str) -> Dict:
         # Load model and processor
         model_path = models[model_id]["model_path"]
+        model_lang = models[model_id]["lang"]
         if os.path.exists(model_path):
             logger.info("Loading model...", model_id=model_id)
-            self._processor = Wav2Vec2Processor.from_pretrained(model_path)
-            self._model = Wav2Vec2ForCTC.from_pretrained(model_path).to(self._device)
-            self._model.eval()  # Set model to evaluation mode
+            self._processor[model_lang] = Wav2Vec2Processor.from_pretrained(model_path)
+            self._model[model_lang] = Wav2Vec2ForCTC.from_pretrained(model_path).to(
+                self._device
+            )
+            self._model[model_lang].eval()  # Set model to evaluation mode
             logger.info("Model loaded", model_id=model_id, model_path=model_path)
         else:
             logger.warning(
@@ -38,20 +53,20 @@ class ASRGenerator:
                 model_path=model_path,
             )
 
-    async def do_asr(self, input_path: str):
+    async def do_asr(self, input_path: str, lang: str):
         # Load audio file
         logger.debug(f"Loading {input_path}")
         audio, sr = librosa.load(input_path, sr=16000)
         logger.debug(f"{input_path} loaded")
-        input_values = self._processor(
+        input_values = self._processor[lang](
             audio, sampling_rate=sr, return_tensors="pt", padding=True
         ).input_values.to(self._device)
         logger.debug("Input values ready")
         with torch.no_grad():
-            logits = self._model(input_values).logits
+            logits = self._model[lang](input_values).logits
         logger.debug("Logits ready")
         predicted_ids = torch.argmax(logits, dim=-1)
         logger.debug("predictions ready")
-        transcription = self._processor.batch_decode(predicted_ids)[0]
+        transcription = self._processor[lang].batch_decode(predicted_ids)[0]
         logger.debug(f"{transcription=}")
         return transcription

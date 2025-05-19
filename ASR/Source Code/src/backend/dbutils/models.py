@@ -29,6 +29,7 @@ class Manager(Base):
     input_path = Column(String(4000), nullable=False)
     priority = Column(Integer, nullable=True)
     model = Column(String(255), nullable=True)
+    lang = Column(String(255), nullable=True, default="fa")
     status = Column(Enum(WebhookStatus), nullable=False, default=WebhookStatus.pending)
     result = Column(String(4000), nullable=True)
     error = Column(String(4000), nullable=True)

@@ -1,4 +1,4 @@
 CONSOLE_LOG_LEVEL: DEBUG
 FILE_LOG_LEVEL: DEBUG
 QUEUE_CONNECTION: amqp://guest:guest@localhost/
-MODEL_ID: Sharif-wav2vec2
+MODEL_IDs: Sharif-wav2vec2,facebook/wav2vec2-base-960h
