@@ -21,6 +21,14 @@ models = {
         "model_path": f"{models_dir}/facebook/wav2vec2-base-960h",
         "lang": "en",
     },
+    "jonatasgrosman/wav2vec2-large-xlsr-53-english": {
+        "model_path": f"{models_dir}/jonatasgrosman/wav2vec2-large-xlsr-53-english",
+        "lang": "en",
+    },
+    "facebook/wav2vec2-large-robust-ft-libri-960h": {
+        "model_path": f"{models_dir}/facebook/wav2vec2-large-robust-ft-libri-960h",
+        "lang": "en",
+    },
 }
 
 
