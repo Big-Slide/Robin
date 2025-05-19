@@ -102,8 +102,10 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             try:
                 resp = self._extract_json_from_response(ai_msg.content)
-            except Exception:
-                logger.opt(exception=True).error("Failed to parse response to json")
+            except Exception as e:
+                logger.opt(exception=False).warning(
+                    "Failed to parse response to json", e=e.args
+                )
                 resp = ai_msg.content
             return resp, None
         elif task == "pdf_analysis":
