@@ -11,16 +11,27 @@ from core.cv_generator import CVGenerator
 
 class LLMGenerator:
     def __init__(self):
+        self._current_model = None
+        self._set_model()
+
+    def _set_model(self, model: str = None):
+        if model is not None and model == self._current_model:
+            return
+        if model:
+            id_model = model
+        else:
+            id_model = config.MODEL_ID
         self.llm = ChatOllama(
             base_url=config.CORE_BASE_URL,
-            model=config.MODEL_ID,
+            model=id_model,
             temperature=config.MODEL_TEMPERATURE,
             num_predict=config.MODEL_NUM_PREDICT,
             top_p=config.MODEL_TOP_P,
         )
         self.cv_generator = CVGenerator(self.llm)
+        self._current_model = id_model
 
-    async def process_pdf(self, filepath: str) -> str:
+    async def _process_pdf(self, filepath: str) -> str:
         pdf_content = ""
         with open(filepath, "rb") as file:
             pdf_reader = PyPDF2.PdfReader(file)
@@ -35,9 +46,11 @@ class LLMGenerator:
         input2_path: str = None,
         input_params: Dict = None,
         output_path: str = None,
+        model: str = None,
     ) -> Union[str, str]:
+        self._set_model(model=model)
         if task == "hr_pdf_analysis":
-            pdf_text = await self.process_pdf(input1_path)
+            pdf_text = await self._process_pdf(input1_path)
             messages = [
                 (
                     "system",
@@ -63,6 +76,8 @@ class LLMGenerator:
             cv_content = self.cv_generator.generate_cv_content(user_data)
             self.cv_generator.create_pdf_cv(cv_content, output_path)
             return None, output_path
+        elif task == "chat":
+            pass
         else:
             pass
         return {}

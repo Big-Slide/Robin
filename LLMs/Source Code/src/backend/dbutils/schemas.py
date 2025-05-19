@@ -40,6 +40,7 @@ class vm_response(BaseModel):
 class vm_request_cv_generator(BaseModel):
     request_id: str
     priority: int = 1
+    model: str = None
     full_name: str
     target_role: str
     years_exp: int
