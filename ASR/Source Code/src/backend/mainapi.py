@@ -107,6 +107,9 @@ async def speech_to_text(
     if request_id is None:
         request_id = str(uuid.uuid4())
 
+    if lang not in ["fa", "en", "ar"]:
+        return Message("en").ERR_LANG_NOT_SUPPORTED()
+
     # Save uploaded file
     input_path = f"{temp_voice_dir}/{request_id}_{audio_file.filename}"
     with open(input_path, "wb") as f:

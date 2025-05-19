@@ -29,6 +29,10 @@ models = {
         "model_path": f"{models_dir}/facebook/wav2vec2-large-robust-ft-libri-960h",
         "lang": "en",
     },
+    "jonatasgrosman/wav2vec2-large-xlsr-53-arabic": {
+        "model_path": f"{models_dir}/jonatasgrosman/wav2vec2-large-xlsr-53-arabic",
+        "lang": "ar",
+    },
 }
 
 
