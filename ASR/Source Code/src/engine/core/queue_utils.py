@@ -15,14 +15,16 @@ async def process_message(
             message_body = json.loads(message.body.decode())
             input_path = message_body["input_path"]
             request_id = message_body["request_id"]
+            lang = message_body["lang"]
 
             logger.info(
                 "Processing task",
                 request_id=request_id,
                 input_path=input_path,
+                lang=lang,
             )
             # TODO: mark task as in progress
-            text = await asr_generator.do_asr(input_path)
+            text = await asr_generator.do_asr(input_path=input_path, lang=lang)
 
             result = {
                 "request_id": request_id,
