@@ -51,11 +51,10 @@ class LLMGenerator:
             json_match = re.search(r"\{[\s\S]*\}", response_text)
             if json_match:
                 json_str = json_match.group()
-                return json_str
-                # try:
-                #     return json.loads(json_str)
-                # except json.JSONDecodeError as e:
-                #     raise ValueError("Found JSON block but could not parse it.") from e
+                try:
+                    return json.dumps(json.loads(json_str), separators=(",", ":"))
+                except json.JSONDecodeError as e:
+                    raise ValueError("Found JSON block but could not parse it.") from e
             raise ValueError("No JSON object found in the response.")
 
     async def process_task(
