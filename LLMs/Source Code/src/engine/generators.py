@@ -101,7 +101,7 @@ class LLMGenerator:
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             try:
-                resp = self._extract_json_from_response(ai_msg.content)
+                resp = str(self._extract_json_from_response(ai_msg.content))
             except Exception as e:
                 logger.opt(exception=False).warning(
                     "Failed to parse response to json", e=e.args
