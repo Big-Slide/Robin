@@ -272,8 +272,9 @@ class LLMGenerator:
                         Language detection instructions:
                             1. Before evaluating, carefully analyze the script and characteristic features of the text.
                             2. Pay special attention to distinguishing between similar-looking languages:
+                                - Consider whole question and answer text to determine the language 
                                 - Persian (Farsi) uses characters like گ چ پ ژ that are absent in Arabic
-                                - Arabic uses characters like ة ث ذ ض ص ط ظ that are rare or absent in Persian
+                                - Arabic uses characters like ة that are rare or absent in Persian
                                 - Persian sentences often contain "است" and "می" prefixes connected to verbs
                                 - Persian numbers are formatted differently than Arabic numbers
                             3. Set the "evaluation_language" field to the precise language name (e.g., "Persian", "Arabic", "Urdu", etc.)
