@@ -229,18 +229,17 @@ class LLMGenerator:
                             "evaluation_results": [
                                 {
                                     "question_id": 0,
-                                    "score": 0,
                                     "completeness": 0,
                                     "relevance": 0,
                                     "specificity": 0,
                                     "structure": 0,
+                                    "total_score": 0.0,
                                     "justification": "",
                                     "suggested_improvements": ""
                                 }
                             ],
                             "overall_assessment": {
-                                "max_possible_score": 0,
-                                "percentage_score": 0.0,
+                                "max_possible_score": 10,
                                 "average_score": 0.0,
                                 "strengths": [],
                                 "areas_for_improvement": []
