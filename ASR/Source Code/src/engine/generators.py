@@ -11,6 +11,7 @@ import os
 from typing import Dict
 from config.config_handler import config
 import numpy as np
+from speechbrain.inference.ASR import WhisperASR
 
 if os.environ.get("MODE", "dev") == "prod":
     models_dir = "/approot/models"
@@ -46,7 +47,7 @@ models = {
     "speechbrain/asr-whisper-medium-commonvoice-ar": {
         "model_path": f"{models_dir}/speechbrain/asr-whisper-medium-commonvoice-ar",
         "lang": "ar",
-        "type": "whisper",
+        "type": "speechbrain_whisper",
     },
 }
 
@@ -89,6 +90,13 @@ class ASRGenerator:
                     )
                 )
                 self._model[model_lang].eval()  # Set model to evaluation mode
+            elif model_type == "speechbrain_whisper":
+                self._model[model_lang] = WhisperASR.from_hparams(
+                    source=model_path, run_opts={"device": self._device}
+                )
+                self._model[model_lang].eval()
+                a = WhisperASR.from_hparams()
+                a.transcribe_batch
             logger.info("Model loaded", model_id=model_id, model_path=model_path)
         else:
             logger.warning(
@@ -97,9 +105,8 @@ class ASRGenerator:
             )
 
     async def do_asr(self, input_path: str, lang: str):
-        # Load audio file
-        audio, sr = librosa.load(input_path, sr=16000)
         if self._model_type[lang] == "wav2vec2":
+            audio, sr = librosa.load(input_path, sr=16000)
             input_values = self._processor[lang](
                 audio, sampling_rate=sr, return_tensors="pt", padding=True
             ).input_values.to(self._device)
@@ -108,6 +115,7 @@ class ASRGenerator:
             predicted_ids = torch.argmax(logits, dim=-1)
             transcription = self._processor[lang].batch_decode(predicted_ids)[0]
         elif self._model_type[lang] == "whisper":
+            audio, sr = librosa.load(input_path, sr=16000)
             audio = np.array(audio).astype(np.float32)
             # Process with Whisper processor
             input_features = self._processor[lang](
@@ -120,5 +128,7 @@ class ASRGenerator:
             transcription = self._processor[lang].batch_decode(
                 predicted_ids, skip_special_tokens=True
             )[0]
+        elif self._model_type[lang] == "speechbrain_whisper":
+            transcription = self._model[lang].transcribe_file(input_path)
         logger.debug(f"{transcription=}")
         return transcription

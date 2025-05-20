@@ -8,3 +8,4 @@ numpy<2
 python-multipart==0.0.20
 aio-pika==9.5.4
 loguru==0.7.3
+speechbrain==1.0.3
