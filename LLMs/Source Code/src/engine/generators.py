@@ -45,7 +45,7 @@ class LLMGenerator:
         """
         try:
             # Try to directly parse if the whole response is JSON
-            return json.loads(response_text)
+            return json.dumps(json.loads(response_text), separators=(",", ":"))
         except json.JSONDecodeError:
             # Fallback: Extract the first JSON-like block from the text
             json_match = re.search(r"\{[\s\S]*\}", response_text)
@@ -141,7 +141,7 @@ class LLMGenerator:
                             - Extract information as it appears in the CV, without interpretation or enhancement.
                             - Ensure the data is concise and well-formatted.
                             - Do not translate any content - keep everything in the CV's original language.
-                            - Respond strictly in valid JSON format, with no additional text before or after the JSON object.
+                            - Respond strictly with valid JSON format and no additional text before or after.
                     """,
                 ),
                 ("human", f"{pdf_text}"),
@@ -270,6 +270,7 @@ class LLMGenerator:
                             - number_of_questions: Integer indicating the total number of questions evaluated
 
                         ALWAYS respond in the same language as the questions and answers provided. The entire evaluation, including justifications and suggested improvements, must be in the matching language.
+                        
                         Respond strictly with valid JSON format and no additional text before or after.
                     """,
                 ),
