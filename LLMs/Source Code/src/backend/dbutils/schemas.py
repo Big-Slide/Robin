@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
@@ -32,6 +32,17 @@ class vm_response(BaseModel):
     message: str = ""
     code: str = ""
     data: dict = None
+
+    class Config:
+        from_attributes = True
+
+
+class vm_request_hr_analysis_question(BaseModel):
+    request_id: str
+    priority: int = 1
+    model: str = None
+    questions: List[str]
+    answers: List[str]
 
     class Config:
         from_attributes = True
