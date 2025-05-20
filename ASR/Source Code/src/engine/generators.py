@@ -15,8 +15,10 @@ from speechbrain.inference.ASR import WhisperASR
 
 if os.environ.get("MODE", "dev") == "prod":
     models_dir = "/approot/models"
+    cache_dir = "/approot/models/cache"
 else:
     models_dir = "../../../Models"
+    cache_dir = "../../../Models/cache"
 
 models = {
     "SLPL/Sharif-wav2vec2": {
@@ -92,7 +94,9 @@ class ASRGenerator:
                 self._model[model_lang].eval()  # Set model to evaluation mode
             elif model_type == "speechbrain_whisper":
                 self._model[model_lang] = WhisperASR.from_hparams(
-                    source=model_path, run_opts={"device": self._device}
+                    source=model_path,
+                    savedir=cache_dir,
+                    run_opts={"device": self._device},
                 )
                 self._model[model_lang].eval()
             logger.info("Model loaded", model_id=model_id, model_path=model_path)
