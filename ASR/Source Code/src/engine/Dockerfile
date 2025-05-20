@@ -10,7 +10,9 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 RUN python -m pip install --upgrade pip
 
-RUN python -m pip install torch==2.6.0+cpu --index-url https://download.pytorch.org/whl/cpu --timeout $PIP_TIMEOUT
+RUN python -m pip install torch==2.7.0+cpu --index-url https://download.pytorch.org/whl/cpu --timeout $PIP_TIMEOUT
+
+RUN python -m pip install speechbrain==1.0.3  --timeout $PIP_TIMEOUT
 
 ADD ./requirements.txt /srv/
 RUN python -m pip cache purge && python -m pip install --timeout $PIP_TIMEOUT --no-cache-dir -r /srv/requirements.txt
