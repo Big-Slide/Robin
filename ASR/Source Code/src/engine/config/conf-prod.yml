@@ -1,4 +1,4 @@
 CONSOLE_LOG_LEVEL: WARNING
 FILE_LOG_LEVEL: INFO
 QUEUE_CONNECTION: amqp://guest:guest@queue/
-MODEL_IDs: Sharif-wav2vec2,jonatasgrosman/wav2vec2-large-xlsr-53-arabic,jonatasgrosman/wav2vec2-large-xlsr-53-english
+MODEL_IDs: SLPL/Sharif-wav2vec2,speechbrain/asr-whisper-medium-commonvoice-ar,jonatasgrosman/wav2vec2-large-xlsr-53-english
