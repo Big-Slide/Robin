@@ -95,8 +95,6 @@ class ASRGenerator:
                     source=model_path, run_opts={"device": self._device}
                 )
                 self._model[model_lang].eval()
-                a = WhisperASR.from_hparams()
-                a.transcribe_batch
             logger.info("Model loaded", model_id=model_id, model_path=model_path)
         else:
             logger.warning(
