@@ -233,16 +233,13 @@ class LLMGenerator:
                                     "relevance": 0,
                                     "specificity": 0,
                                     "structure": 0,
-                                    "total_score": 0.0,
-                                    "justification": "",
-                                    "suggested_improvements": ""
+                                    "average_score": 0.0,
+                                    "justification": "" // THIS FIELD MUST CONTAIN A BRIEF EXPLANATION
                                 }
                             ],
                             "overall_assessment": {
                                 "max_possible_score": 10,
-                                "average_score": 0.0,
-                                "strengths": [],
-                                "areas_for_improvement": []
+                                "average_score": 0.0
                             }
                         }
 
