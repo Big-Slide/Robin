@@ -268,32 +268,28 @@ async def hr_pdf_comparison(
 
 @app.post("/aihive-llm/api/v1/hranlqus/pdf-to-txt-offline")
 async def hr_analysis_question(
-    file: UploadFile,
-    request_id: str = None,
-    priority: int = 1,
-    model: str = None,
+    items: schemas.vm_request_hr_analysis_question,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    logger.info("request hr_analysis_question", request_id=request_id, model=model)
-    if request_id is None:
+    logger.info(
+        "request hr_analysis_question", request_id=items.request_id, model=items.model
+    )
+    if items.request_id is None:
         request_id = str(uuid.uuid4())
-
-    # Save uploaded file
-    input1_path = f"{temp_dir}/{request_id}_{file.filename}"
-    with open(input1_path, "wb") as f:
-        f.write(await file.read())
+    else:
+        request_id = items.request_id
 
     response = crud.add_request(
         db=db,
         request_id=request_id,
         task="hr_analysis_question",
-        input1_path=input1_path,
+        input_params=json.dumps(
+            items.model_dump(exclude={"request_id", "priority", "model"})
+        ).encode(),
         itime=datetime.now(tz=None),
     )
     if not response["status"]:
-        if os.path.exists(input1_path):
-            os.remove(input1_path)
         return response
 
     channel = await connection.channel()
@@ -301,10 +297,9 @@ async def hr_analysis_question(
     # TODO: change input_path to binary data
     message_body = {
         "task": "hr_analysis_question",
-        "input1_path": input1_path,
-        "input2_path": None,
+        "input_params": items.model_dump(exclude={"request_id", "priority", "model"}),
         "request_id": request_id,
-        "model": model,
+        "model": items.model,
     }
 
     await channel.default_exchange.publish(
@@ -327,7 +322,9 @@ async def cv_generate_offline(
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    logger.info("request cv_generate_offline", request_id=items.request_id)
+    logger.info(
+        "request cv_generate_offline", request_id=items.request_id, model=items.model
+    )
     if items.request_id is None:
         request_id = str(uuid.uuid4())
     else:
