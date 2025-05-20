@@ -269,8 +269,18 @@ class LLMGenerator:
                             - evaluation_language: String indicating the language used in the evaluation
                             - number_of_questions: Integer indicating the total number of questions evaluated
 
+                        Language detection instructions:
+                            1. Before evaluating, carefully analyze the script and characteristic features of the text.
+                            2. Pay special attention to distinguishing between similar-looking languages:
+                                - Persian (Farsi) uses characters like گ چ پ ژ that are absent in Arabic
+                                - Arabic uses characters like ة ث ذ ض ص ط ظ that are rare or absent in Persian
+                                - Persian sentences often contain "است" and "می" prefixes connected to verbs
+                                - Persian numbers are formatted differently than Arabic numbers
+                            3. Set the "evaluation_language" field to the precise language name (e.g., "Persian", "Arabic", "Urdu", etc.)
+                            4. Ensure all response text (justifications, suggestions, etc.) is in the EXACT same language as the input
+
                         ALWAYS respond in the same language as the questions and answers provided. The entire evaluation, including justifications and suggested improvements, must be in the matching language.
-                        
+
                         Respond strictly with valid JSON format and no additional text before or after.
                     """,
                 ),
