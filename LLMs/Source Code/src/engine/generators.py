@@ -227,33 +227,89 @@ class LLMGenerator:
                         The response must strictly adhere to this JSON schema:
                         {
                             "evaluation_results": [
-                                {
-                                "question_id": 0,
-                                "question_text": "",
-                                "answer_text": "",
-                                "score": 0,
-                                "justification": "",
-                                "suggested_improvements": ""
-                                }
+                            {
+                            "question_id": 0,
+                            "question_text": "",
+                            "answer_text": "",
+                            "score": 0,
+                            "justification": "",
+                            "suggested_improvements": ""
+                            }
                             ],
                             "overall_assessment": {
-                                "max_possible_score": 0,
-                                "percentage_score": 0.0,
-                                "average_score": 0.0,
-                                "strengths": [],
-                                "areas_for_improvement": []
+                            "total_score": 0,
+                            "max_possible_score": 0,
+                            "percentage_score": 0.0,
+                            "average_score": 0.0,
+                            "strengths": [],
+                            "areas_for_improvement": []
                             },
                             "metadata": {
-                                "evaluation_timestamp": "",
-                                "evaluation_language": "",
-                                "number_of_questions": 0
+                            "evaluation_timestamp": "",
+                            "evaluation_language": "",
+                            "number_of_questions": 0
                             }
                         }
+                        CRITICAL CHARACTER HANDLING INSTRUCTIONS:
 
+                        EXACT TEXT PRESERVATION:
+
+                        Copy all input text EXACTLY as provided, character by character
+                        Do not modify, interpret, translate, or "fix" ANY text
+                        Do not generate alternative or "improved" versions of input text
+                        When in doubt, copy the original text verbatim
+
+
+                        ESCAPE CHARACTER HANDLING:
+
+                        Do not double-escape Unicode characters
+                        Do not convert properly rendered Unicode characters back to escape sequences
+                        Do not add additional escape characters () to already properly formatted text
+                        If input contains escape sequences (e.g., \u0628), preserve them exactly as is
+                        When processing Persian/Arabic/non-Latin text, work with the rendered characters directly
+
+
+                        QUALITY VERIFICATION:
+
+                        Before submitting, verify that you have not corrupted or altered the original text
+                        Check that all Persian/Arabic characters appear exactly as in the original input
+                        Confirm that you have not generated artificial content to replace the original text
+
+
+                        LANGUAGE DETECTION:
+
+                        For Persian text, look for:
+
+                        Persian-specific letters: پ (peh), چ (cheh), ژ (zheh), گ (gaf)
+                        Persian words: در، به، را، از، که، می، برای، این، با، است، هست
+                        Persian grammatical structures
+
+
+                        For Arabic text, look for:
+
+                        Arabic-specific forms: ة (taa marbuuta), definite articles (ال)
+                        Arabic words and grammatical structures
+
+
+                        Set evaluation_language to "Persian" or "Arabic" accordingly (use only these standard English names)
+                        If text appears to be artificial or corrupted, set evaluation_language to "Undetermined"
+
+
+                        RESPONSE GENERATION:
+
+                        Justifications and suggested improvements must be in the same language as the input text
+                        For Persian input, respond in Persian
+                        For Arabic input, respond in Arabic
+                        For English input, respond in English
+                        Use proper, natural language in your responses - not artificial text
+
+
+
+                        Remember: Your primary responsibility is to PRESERVE the exact original text. Evaluation accuracy is secondary to text preservation.
                         Respond strictly with valid JSON format and no additional text before or after.
                     """,
                 ),
-                ("human", f"Questions:\n{questions}\n\nAnswers:{answers}"),
+                ("human", f"'Questions':\n{questions}\n\n'Answers':\n{answers}"),
             ]
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
