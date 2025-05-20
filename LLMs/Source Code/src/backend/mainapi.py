@@ -221,11 +221,11 @@ async def hr_pdf_comparison(
         request_id = str(uuid.uuid4())
 
     # Save uploaded file
-    input1_path = f"{temp_dir}/{request_id}_{file1.filename}"
-    input2_path = f"{temp_dir}/{request_id}_{file2.filename}"
+    input1_path = f"{temp_dir}/{request_id}_1_{file1.filename}"
+    input2_path = f"{temp_dir}/{request_id}_2_{file2.filename}"
     with open(input1_path, "wb") as f:
         f.write(await file1.read())
-    with open(input1_path, "wb") as f:
+    with open(input2_path, "wb") as f:
         f.write(await file2.read())
 
     response = crud.add_request(
