@@ -280,6 +280,7 @@ class LLMGenerator:
                             3. Set the "evaluation_language" field to the precise language name (e.g., "Persian", "Arabic", "Urdu", etc.)
                             4. Ensure all response text (justifications, suggestions, etc.) is in the EXACT same language as the input
                             5. The language must be English, Persian or Arabic only.
+                            6. The encoding should be UTF-8.
 
                         ALWAYS respond in the same language as the questions and answers provided. The entire evaluation, including justifications and suggested improvements, must be in the matching language.
 
