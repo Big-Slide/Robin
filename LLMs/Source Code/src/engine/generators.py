@@ -223,36 +223,41 @@ class LLMGenerator:
                     "system",
                     """
                         You are an intelligent evaluation assistant working for Zenon Robotics. Your task is to evaluate answers to questions and provide numerical scores.
+                        
                         The response must strictly adhere to this JSON schema:
+
                         {
                             "evaluation_results": [
-                            {
-                            "question_id": 0,
-                            "question_text": "",
-                            "answer_text": "",
-                            "score": 0,
-                            "justification": "",
-                            "suggested_improvements": ""
-                            }
+                                {
+                                "question_id": 0,
+                                "question_text": "",
+                                "answer_text": "",
+                                "score": 0,
+                                "justification": "",
+                                "suggested_improvements": ""
+                                }
                             ],
                             "overall_assessment": {
-                            "total_score": 0,
-                            "max_possible_score": 0,
-                            "percentage_score": 0.0,
-                            "average_score": 0.0,
-                            "strengths": [],
-                            "areas_for_improvement": []
+                                "total_score": 0,
+                                "max_possible_score": 0,
+                                "percentage_score": 0.0,
+                                "average_score": 0.0,
+                                "strengths": [],
+                                "areas_for_improvement": []
                             },
                             "metadata": {
-                            "evaluation_timestamp": "",
-                            "evaluation_language": "",
-                            "number_of_questions": 0
+                                "evaluation_timestamp": "",
+                                "evaluation_language": "",
+                                "number_of_questions": 0
                             }
                         }
+
+                        CRITICAL: YOU MUST PRESERVE THE EXACT TEXT OF QUESTIONS AND ANSWERS WITHOUT ANY MODIFICATION. Do not change, transliterate, translate, or alter any of the original text in any way. All text in Arabic script must be copied precisely character-by-character.
+
                         Important schema rules:
                             - question_id: Integer identifying each question (starting from 1)
-                            - question_text: String containing the exact question text
-                            - answer_text: String containing the user's answer
+                            - question_text: String containing the EXACT and UNALTERED question text
+                            - answer_text: String containing the EXACT and UNALTERED user's answer
                             - score: Integer from 0-10 representing the quality of the answer
                             - justification: String explaining the reasoning behind the score (in the same language as the question)
                             - suggested_improvements: String with improvement suggestions (empty if score ≥ 8)
@@ -265,39 +270,46 @@ class LLMGenerator:
                             - evaluation_timestamp: String in ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ)
                             - evaluation_language: String indicating the language used in the evaluation
                             - number_of_questions: Integer indicating the total number of questions evaluated
+
                         Language detection instructions:
-                            1. Perform a systematic analysis of the language before evaluation:
-                                - First, analyze a minimum of 10 words from both the question and answer
-                                - Look for definitive language markers rather than just script similarities
-                            2. Specific decisive features for distinguishing Arabic from Persian:
-                                - PERSIAN DEFINITIVE MARKERS:
-                                    * Persian-specific letters: پ (peh), چ (cheh), ژ (zheh), گ (gaf)
-                                    * Common Persian words: در (in), است (is), می‌باشد (is), من (I), با (with)
-                                    * Ezafe construction: phrases like "کتاب من" (my book)
-                                    * Word order: SOV (Subject-Object-Verb) with verbs typically at the end
+                            1. FIRST STEP - CHARACTER VERIFICATION: 
+                            - Before any other processing, verify that you can process the input text correctly
+                            - Reproduce the first 20 characters of both question and answer exactly to confirm encoding fidelity
+                            - If you notice ANY character corruption, respond with error: "Unable to process text correctly"
                             
-                            - ARABIC DEFINITIVE MARKERS:
-                                * Arabic-specific letters: ة (taa marbuuta), ط (tah), ض (dhad)
-                                * Common Arabic words: في (in), هو (he), هي (she), من (from), ال (the)
-                                * Dual forms: words ending with ان or ين
-                                * Word order: VSO (Verb-Subject-Object) in formal Arabic
+                            2. Systematic language identification:
+                            - Persian (Farsi) definitive markers:
+                                * Persian-specific letters: پ (peh), چ (cheh), ژ (zheh), گ (gaf)
+                                * Persian-specific words: در، به، را، از، که، می، برای، این، با، است، هست
+                                * Ezafe construction: possessive phrases like "تیم خود" (your team)
+                                * Verb forms: می‌کنم، می‌شود، هستم، بودم
+                            
+                            - Arabic definitive markers:
+                                * Arabic-specific forms: ة (taa marbuuta), definite articles (ال)
+                                * Arabic-specific words: هذا، هذه، في، من، إلى، على، عن
+                                * Arabic syntax patterns: VSO word order, dual forms (ending with ان/ين)
+                            
+                            3. Set the "evaluation_language" field precisely:
+                            - Use "Persian" for Farsi/Persian texts
+                            - Use "Arabic" for standard Arabic texts
+                            - Never use non-English language names in this field
+                            
+                            4. CRUCIAL: For all text fields containing question text, answer text, justification, or improvement suggestions:
+                            - Copy the EXACT original text without any modifications
+                            - Do not attempt to "correct" or "standardize" the text in any way
+                            - Do not replace any characters, even if they appear unusual or potentially incorrect
+                            - Process the text exactly as provided, preserving all original formatting and characters
+                            
+                            5. When generating justifications and suggested improvements:
+                            - Use ONLY the language detected in the original text
+                            - For Persian content, respond in Persian
+                            - For Arabic content, respond in Arabic
+                            - For English content, respond in English
+                            - NEVER mix languages in your response
 
-                            3. If the text contains mixed features or artificial constructions:
-                                - Count the number of definitive markers for each language
-                                - Assign the language with the higher count of definitive features
-                                - For artificial or made-up text that uses Arabic script, specify "Artificial Arabic Script" as the language
+                        VERIFY before submitting: Check that all text fields contain the EXACT original text without any character modifications or substitutions.
 
-                            4. Set the "evaluation_language" field precisely:
-                                - Use "Arabic" for standard Arabic, with dialect specification if clear (e.g., "Egyptian Arabic")
-                                - Use "Persian" for Farsi/Persian language
-                                - Use "Artificial Arabic Script" for synthetic or artificial text using Arabic script
-                                - Never use transliterated names like "پرسی" or "پرسیان" - always use standard English names
-
-                            5. Ensure all response text (justifications, suggestions, etc.) is in the EXACT same language as the input
-
-                            6. The system supports only English, Persian and Arabic. Reject other languages.
-
-                            7. Use UTF-8 encoding for all output.
+                        Respond strictly with valid JSON format and no additional text before or after.
                     """,
                 ),
                 ("human", f"Questions:\n{questions}\n\nAnswers:{answers}"),
