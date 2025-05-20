@@ -217,6 +217,7 @@ class LLMGenerator:
         elif task == "hr_analysis_question":
             questions = input_params["questions"]
             answers = input_params["answers"]
+            logger.debug(f"{questions=}, {answers=}")
             messages = [
                 (
                     "system",
