@@ -158,7 +158,7 @@ class LLMGenerator:
             return resp, None
         elif task == "pdf_analysis":
             pdf_text = await self._process_pdf(input1_path)
-            (
+            messages = [
                 (
                     "system",
                     """
@@ -175,15 +175,15 @@ class LLMGenerator:
                         Keep your response concise and well-structured.
                     """,
                 ),
-            )
-            (("human", f"{pdf_text}"),)
+                ("human", f"{pdf_text}"),
+            ]
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "hr_pdf_comparison":
             pdf_text1 = await self._process_pdf(input1_path)
             pdf_text2 = await self._process_pdf(input2_path)
-            (
+            messages = [
                 (
                     "system",
                     """
@@ -209,8 +209,8 @@ class LLMGenerator:
                         Be objective, detailed, and structured in your analysis.
                     """,
                 ),
-            )
-            (("human", f"Candidate A\n{pdf_text1}\n\nCandidate B\n{pdf_text2}"),)
+                ("human", f"Candidate A\n{pdf_text1}\n\nCandidate B\n{pdf_text2}"),
+            ]
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
