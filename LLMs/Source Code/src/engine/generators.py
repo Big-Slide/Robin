@@ -96,7 +96,7 @@ class LLMGenerator:
                         Always respond strictly in JSON format, using the CV’s original language for all values.
                     """,
                 ),
-                ("human", f":\n\n{pdf_text}"),
+                ("human", f":\n{pdf_text}"),
             ]
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
@@ -109,9 +109,59 @@ class LLMGenerator:
                 resp = ai_msg.content
             return resp, None
         elif task == "pdf_analysis":
-            pass
+            pdf_text = await self._process_pdf(input1_path)
+            (
+                (
+                    "system",
+                    """
+                        You are an intelligent assistant at Zenon Robotics working with PDF content provided as plain text.
+                        Your task is to:
+                            - Read the full text of the PDF (provided as input).
+                            - Detect the original language of the content.
+                            - Summarize the content clearly and concisely in the same language as the original text.
+                            - Do not translate or change the language. Use the same language detected from the content.
+                            - Capture the key ideas, main sections, important facts, or conclusions from the document.
+                        If the text is too short or lacks meaningful information, politely respond in the document's language indicating that no summary is necessary.
+                        Keep your response concise and well-structured.
+                    """,
+                ),
+            )
+            (("human", f":\n{pdf_text}"),)
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
         elif task == "hr_pdf_comparison":
-            pass
+            pdf_text1 = await self._process_pdf(input1_path)
+            pdf_text2 = await self._process_pdf(input2_path)
+            (
+                (
+                    "system",
+                    """
+                        You are an intelligent assistant at Zenon Robotics. You will receive the full content of two CVs as plain text (extracted from PDF).
+                        Your task is to:
+                        1. Analyze both CVs based on standard parameters:
+                            - Full name
+                            - Contact information
+                            - Skills (technical and soft)
+                            - Work experience (roles, companies, dates)
+                            - Education
+                            - Languages
+                            - Certifications or professional training
+                            - Notable projects or achievements
+                        2. Compare the two CVs based on the above attributes.
+                        3. For each parameter, highlight:
+                            - Which candidate has stronger or more relevant content
+                            - Any missing or incomplete information
+                        4. Respond in a clear and organized format, using the language of the CVs if both are in the same language. If they're in different languages, respond in English for clarity.
+                        5. If either CV lacks any of the standard information, clearly mention which parts are missing and in which CV.
+                        Be objective, detailed, and structured in your analysis.
+                    """,
+                ),
+            )
+            (("human", f":\nCandidate A\n{pdf_text1}\n\nCandidate B\n{pdf_text2}"),)
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
         elif task == "hr_analysis_question":
             pass
         elif task == "cv_generate":
@@ -141,7 +191,7 @@ class LLMGenerator:
                         When appropriate, include examples, analogies, or step-by-step explanations to improve clarity. Always aim to solve the user's problem or guide them to the best next step.
                     """,
                 ),
-                ("human", f":\n\n{prompt}"),
+                ("human", f":\n{prompt}"),
             ]
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
