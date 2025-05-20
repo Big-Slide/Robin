@@ -127,6 +127,7 @@ class ASRGenerator:
                 predicted_ids, skip_special_tokens=True
             )[0]
         elif self._model_type[lang] == "speechbrain_whisper":
-            transcription = self._model[lang].transcribe_file(input_path)
+            resp = self._model[lang].transcribe_file(input_path)
+            transcription = " ".join([item.words for item in resp])
         logger.debug(f"{transcription=}")
         return transcription
