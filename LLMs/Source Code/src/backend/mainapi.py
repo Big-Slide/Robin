@@ -94,7 +94,7 @@ app.add_middleware(
 base_mdl = base.Base()
 
 
-@app.post("/aihive-llm/api/v1/hrpdfanl/pdf-to-txt-offline")
+@app.post("/aihive-llm/api/v1/hrpdfanl/pdf-to-json-offline")
 async def hr_pdf_analysis(
     file: UploadFile,
     request_id: str = None,
@@ -266,7 +266,7 @@ async def hr_pdf_comparison(
     return msg
 
 
-@app.post("/aihive-llm/api/v1/hranlqus/pdf-to-txt-offline")
+@app.post("/aihive-llm/api/v1/hranlqus/txt-to-json-offline")
 async def hr_analysis_question(
     items: schemas.vm_request_hr_analysis_question,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),

@@ -45,7 +45,7 @@ class LLMGenerator:
         """
         try:
             # Try to directly parse if the whole response is JSON
-            return json.loads(response_text)
+            return json.dumps(json.loads(response_text), separators=(",", ":"))
         except json.JSONDecodeError:
             # Fallback: Extract the first JSON-like block from the text
             json_match = re.search(r"\{[\s\S]*\}", response_text)
@@ -141,7 +141,7 @@ class LLMGenerator:
                             - Extract information as it appears in the CV, without interpretation or enhancement.
                             - Ensure the data is concise and well-formatted.
                             - Do not translate any content - keep everything in the CV's original language.
-                            - Respond strictly in valid JSON format, with no additional text before or after the JSON object.
+                            - Respond strictly with valid JSON format and no additional text before or after.
                     """,
                 ),
                 ("human", f"{pdf_text}"),
@@ -217,59 +217,40 @@ class LLMGenerator:
         elif task == "hr_analysis_question":
             questions = input_params["questions"]
             answers = input_params["answers"]
+            logger.debug(f"{questions=}, {answers=}")
             messages = [
                 (
                     "system",
                     """
-                        You are an intelligent evaluation assistant working for Zenon Robotics. Your task is to evaluate answers to questions and provide numerical scores.
+                        You are an intelligent evaluation assistant working for Zenon Robotics. You will be given two list. One list of strings for Questions and another list for Answers. Your task is to evaluate answers to questions and provide numerical scores between 0 to 10.
                         
                         The response must strictly adhere to this JSON schema:
-
                         {
                             "evaluation_results": [
                                 {
-                                "question_id": 0,
-                                "question_text": "",
-                                "answer_text": "",
-                                "score": 0,
-                                "justification": "",
-                                "suggested_improvements": ""
+                                    "question_id": 0,
+                                    "completeness": 0,
+                                    "relevance": 0,
+                                    "specificity": 0,
+                                    "structure": 0,
+                                    "average_score": 0.0,
+                                    "justification": "" // THIS FIELD MUST CONTAIN A BRIEF EXPLANATION
                                 }
                             ],
                             "overall_assessment": {
-                                "total_score": 0,
-                                "max_possible_score": 0,
-                                "percentage_score": 0.0,
-                                "average_score": 0.0,
-                                "strengths": [],
-                                "areas_for_improvement": []
-                            },
-                            "metadata": {
-                                "evaluation_timestamp": "",
-                                "evaluation_language": "",
-                                "number_of_questions": 0
+                                "max_possible_score": 10,
+                                "average_score": 0.0
                             }
                         }
 
-                        Important schema rules:
-                            - question_id: Integer identifying each question (starting from 1)
-                            - question_text: String containing the exact question text
-                            - answer_text: String containing the user's answer
-                            - score: Integer from 0-10 representing the quality of the answer
-                            - justification: String explaining the reasoning behind the score (in the same language as the question)
-                            - suggested_improvements: String with improvement suggestions (empty if score ≥ 8)
-                            - total_score: Integer sum of all individual scores
-                            - max_possible_score: Integer representing the maximum possible score (number of questions × 10)
-                            - percentage_score: Float representing (total_score / max_possible_score) × 100, rounded to one decimal place
-                            - average_score: Float representing total_score divided by number of questions, rounded to one decimal place
-                            - strengths: Array of strings (2-3 items) highlighting key strengths
-                            - areas_for_improvement: Array of strings (2-3 items) highlighting key areas for improvement
-                            - evaluation_timestamp: String in ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ)
-                            - evaluation_language: String indicating the language used in the evaluation
-                            - number_of_questions: Integer indicating the total number of questions evaluated
-
-                        ALWAYS respond in the same language as the questions and answers provided. The entire evaluation, including justifications and suggested improvements, must be in the matching language.
-                        Respond strictly with valid JSON format and no additional text before or after.
+                        Important guidelines:
+                            - Always maintain the exact structure shown above.
+                            - Leave any field as an empty string ("") or empty array ([]) if the information is not found or unclear.
+                            - Do not add additional fields not specified in the schema.
+                            - Extract information as it appears in the provided prompt, without interpretation or enhancement.
+                            - Ensure the data is concise and well-formatted.
+                            - Do not translate any content - keep everything in the original language.
+                            - Respond strictly with valid JSON format and no additional text before or after.
                     """,
                 ),
                 ("human", f"Questions:\n{questions}\n\nAnswers:{answers}"),
