@@ -1,11 +1,16 @@
 from loguru import logger
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
+from transformers import (
+    Wav2Vec2ForCTC,
+    Wav2Vec2Processor,
+    WhisperProcessor,
+    WhisperForConditionalGeneration,
+)
 import torch
 import librosa
 import os
 from typing import Dict
 from config.config_handler import config
-
+import numpy as np
 
 if os.environ.get("MODE", "dev") == "prod":
     models_dir = "/approot/models"
@@ -13,25 +18,35 @@ else:
     models_dir = "../../../Models"
 
 models = {
-    "Sharif-wav2vec2": {
+    "SLPL/Sharif-wav2vec2": {
         "model_path": f"{models_dir}/SLPL/Sharif-wav2vec2",
         "lang": "fa",
+        "type": "wav2vec2",
     },
     "facebook/wav2vec2-base-960h": {
         "model_path": f"{models_dir}/facebook/wav2vec2-base-960h",
         "lang": "en",
+        "type": "wav2vec2",
     },
     "jonatasgrosman/wav2vec2-large-xlsr-53-english": {
         "model_path": f"{models_dir}/jonatasgrosman/wav2vec2-large-xlsr-53-english",
         "lang": "en",
+        "type": "wav2vec2",
     },
     "facebook/wav2vec2-large-robust-ft-libri-960h": {
         "model_path": f"{models_dir}/facebook/wav2vec2-large-robust-ft-libri-960h",
         "lang": "en",
+        "type": "wav2vec2",
     },
     "jonatasgrosman/wav2vec2-large-xlsr-53-arabic": {
         "model_path": f"{models_dir}/jonatasgrosman/wav2vec2-large-xlsr-53-arabic",
         "lang": "ar",
+        "type": "wav2vec2",
+    },
+    "speechbrain/asr-whisper-medium-commonvoice-ar": {
+        "model_path": f"{models_dir}/speechbrain/asr-whisper-medium-commonvoice-ar",
+        "lang": "ar",
+        "type": "whisper",
     },
 }
 
@@ -44,6 +59,7 @@ class ASRGenerator:
         logger.info(f"Device: {self._device}")
         self._processor = {}
         self._model = {}
+        self._model_type = {}
         for model_id in model_ids.split(","):
             self._load_model(model_id)
 
@@ -51,13 +67,28 @@ class ASRGenerator:
         # Load model and processor
         model_path = models[model_id]["model_path"]
         model_lang = models[model_id]["lang"]
+        model_type = models[model_id]["type"]
+        self._model_type[model_lang] = model_type
         if os.path.exists(model_path):
             logger.info("Loading model...", model_id=model_id)
-            self._processor[model_lang] = Wav2Vec2Processor.from_pretrained(model_path)
-            self._model[model_lang] = Wav2Vec2ForCTC.from_pretrained(model_path).to(
-                self._device
-            )
-            self._model[model_lang].eval()  # Set model to evaluation mode
+            if model_type == "wav2vec2":
+                self._processor[model_lang] = Wav2Vec2Processor.from_pretrained(
+                    model_path
+                )
+                self._model[model_lang] = Wav2Vec2ForCTC.from_pretrained(model_path).to(
+                    self._device
+                )
+                self._model[model_lang].eval()  # Set model to evaluation mode
+            elif model_type == "whisper":
+                self._processor[model_lang] = WhisperProcessor.from_pretrained(
+                    model_path
+                )
+                self._model[model_lang] = (
+                    WhisperForConditionalGeneration.from_pretrained(model_path).to(
+                        self._device
+                    )
+                )
+                self._model[model_lang].eval()  # Set model to evaluation mode
             logger.info("Model loaded", model_id=model_id, model_path=model_path)
         else:
             logger.warning(
@@ -67,18 +98,27 @@ class ASRGenerator:
 
     async def do_asr(self, input_path: str, lang: str):
         # Load audio file
-        logger.debug(f"Loading {input_path}")
         audio, sr = librosa.load(input_path, sr=16000)
-        logger.debug(f"{input_path} loaded")
-        input_values = self._processor[lang](
-            audio, sampling_rate=sr, return_tensors="pt", padding=True
-        ).input_values.to(self._device)
-        logger.debug("Input values ready")
-        with torch.no_grad():
-            logits = self._model[lang](input_values).logits
-        logger.debug("Logits ready")
-        predicted_ids = torch.argmax(logits, dim=-1)
-        logger.debug("predictions ready")
-        transcription = self._processor[lang].batch_decode(predicted_ids)[0]
+        if self._model_type[lang] == "wav2vec2":
+            input_values = self._processor[lang](
+                audio, sampling_rate=sr, return_tensors="pt", padding=True
+            ).input_values.to(self._device)
+            with torch.no_grad():
+                logits = self._model[lang](input_values).logits
+            predicted_ids = torch.argmax(logits, dim=-1)
+            transcription = self._processor[lang].batch_decode(predicted_ids)[0]
+        elif self._model_type[lang] == "whisper":
+            audio = np.array(audio).astype(np.float32)
+            # Process with Whisper processor
+            input_features = self._processor[lang](
+                audio, sampling_rate=16000, return_tensors="pt"
+            ).input_features
+            input_features = input_features.to(self._device)
+            # Generate token ids
+            predicted_ids = self._model[lang].generate(input_features)
+            # Decode token ids to text
+            transcription = self._processor[lang].batch_decode(
+                predicted_ids, skip_special_tokens=True
+            )[0]
         logger.debug(f"{transcription=}")
         return transcription
