@@ -222,10 +222,9 @@ class LLMGenerator:
                 (
                     "system",
                     """
-                        You are an intelligent evaluation assistant working for Zenon Robotics. Your task is to evaluate answers to questions and provide numerical scores.
+                        You are an intelligent evaluation assistant working for Zenon Robotics. You will be given two list. One list of strings for Questions and another list for Answers. Your task is to evaluate answers to questions and provide numerical scores.
                         
                         The response must strictly adhere to this JSON schema:
-
                         {
                             "evaluation_results": [
                                 {
@@ -238,7 +237,6 @@ class LLMGenerator:
                                 }
                             ],
                             "overall_assessment": {
-                                "total_score": 0,
                                 "max_possible_score": 0,
                                 "percentage_score": 0.0,
                                 "average_score": 0.0,
@@ -251,63 +249,6 @@ class LLMGenerator:
                                 "number_of_questions": 0
                             }
                         }
-
-                        CRITICAL: YOU MUST PRESERVE THE EXACT TEXT OF QUESTIONS AND ANSWERS WITHOUT ANY MODIFICATION. Do not change, transliterate, translate, or alter any of the original text in any way. All text in Arabic script must be copied precisely character-by-character.
-
-                        Important schema rules:
-                            - question_id: Integer identifying each question (starting from 1)
-                            - question_text: String containing the EXACT and UNALTERED question text
-                            - answer_text: String containing the EXACT and UNALTERED user's answer
-                            - score: Integer from 0-10 representing the quality of the answer
-                            - justification: String explaining the reasoning behind the score (in the same language as the question)
-                            - suggested_improvements: String with improvement suggestions (empty if score ≥ 8)
-                            - total_score: Integer sum of all individual scores
-                            - max_possible_score: Integer representing the maximum possible score (number of questions × 10)
-                            - percentage_score: Float representing (total_score / max_possible_score) × 100, rounded to one decimal place
-                            - average_score: Float representing total_score divided by number of questions, rounded to one decimal place
-                            - strengths: Array of strings (2-3 items) highlighting key strengths
-                            - areas_for_improvement: Array of strings (2-3 items) highlighting key areas for improvement
-                            - evaluation_timestamp: String in ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ)
-                            - evaluation_language: String indicating the language used in the evaluation
-                            - number_of_questions: Integer indicating the total number of questions evaluated
-
-                        Language detection instructions:
-                            1. FIRST STEP - CHARACTER VERIFICATION: 
-                            - Before any other processing, verify that you can process the input text correctly
-                            - Reproduce the first 20 characters of both question and answer exactly to confirm encoding fidelity
-                            - If you notice ANY character corruption, respond with error: "Unable to process text correctly"
-                            
-                            2. Systematic language identification:
-                            - Persian (Farsi) definitive markers:
-                                * Persian-specific letters: پ (peh), چ (cheh), ژ (zheh), گ (gaf)
-                                * Persian-specific words: در، به، را، از، که، می، برای، این، با، است، هست
-                                * Ezafe construction: possessive phrases like "تیم خود" (your team)
-                                * Verb forms: می‌کنم، می‌شود، هستم، بودم
-                            
-                            - Arabic definitive markers:
-                                * Arabic-specific forms: ة (taa marbuuta), definite articles (ال)
-                                * Arabic-specific words: هذا، هذه، في، من، إلى، على، عن
-                                * Arabic syntax patterns: VSO word order, dual forms (ending with ان/ين)
-                            
-                            3. Set the "evaluation_language" field precisely:
-                            - Use "Persian" for Farsi/Persian texts
-                            - Use "Arabic" for standard Arabic texts
-                            - Never use non-English language names in this field
-                            
-                            4. CRUCIAL: For all text fields containing question text, answer text, justification, or improvement suggestions:
-                            - Copy the EXACT original text without any modifications
-                            - Do not attempt to "correct" or "standardize" the text in any way
-                            - Do not replace any characters, even if they appear unusual or potentially incorrect
-                            - Process the text exactly as provided, preserving all original formatting and characters
-                            
-                            5. When generating justifications and suggested improvements:
-                            - Use ONLY the language detected in the original text
-                            - For Persian content, respond in Persian
-                            - For Arabic content, respond in Arabic
-                            - For English content, respond in English
-                            - NEVER mix languages in your response
-
-                        VERIFY before submitting: Check that all text fields contain the EXACT original text without any character modifications or substitutions.
 
                         Respond strictly with valid JSON format and no additional text before or after.
                     """,
