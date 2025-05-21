@@ -99,6 +99,7 @@ class TTSGenerator:
                 self._kokoro_voice_tensor = torch.load(
                     f"{models_dir}/kokoro/voices/af_heart.pt", weights_only=True
                 )
+                logger.info("Model loaded", model_id=model_id)
 
     async def do_tts(
         self, text: str, tmp_path: str, model: str = None, lang: str = "fa"
@@ -120,7 +121,7 @@ class TTSGenerator:
             generator = self._synthesizers[model](
                 text, voice=self._kokoro_voice_tensor, speed=1, split_pattern=None
             )
-            gs, ps, audio = generator[0]
+            gs, ps, audio = next(generator)
             logger.debug("TTS output", graphemes=gs, phonemes=ps)
             sf.write(tmp_path, audio, 24000)  # save each audio file
         else:
