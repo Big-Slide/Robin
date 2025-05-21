@@ -6,6 +6,7 @@ from enum import Enum
 
 class GenerateRequest(BaseModel):
     text: str
+    lang: str = "fa"
     model: str = None
     request_id: str = None
     priority: int = 1

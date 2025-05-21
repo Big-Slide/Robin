@@ -107,6 +107,7 @@ async def generate_sound(
         request_id=request_id,
         text=request.text,
         model=request.model,
+        lang=request.lang,
         itime=datetime.now(tz=None),
     )
     if not response["status"]:
@@ -118,6 +119,7 @@ async def generate_sound(
     message_body = {
         "text": request.text,
         "model": request.model,
+        "lang": request.lang,
         "request_id": request_id,
     }
 
