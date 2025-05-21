@@ -94,8 +94,6 @@ class TTSGenerator:
                         model_path=model_path,
                     )
             elif models[model_id]["type"] == "kokoro":
-                a = KPipeline(lang_code="a")
-                a()
                 self._synthesizers[model_id] = KPipeline(lang_code="a")
                 self._synthesizers[model_id].load_voice("af_heart")
                 self._kokoro_voice_tensor = torch.load(
