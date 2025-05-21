@@ -31,6 +31,8 @@ services:
       - ./src/engine:/approot/src
       - ../Models:/approot/models
       - ../Outputs:/approot/data
+      - ../Models/cache:/.cache
+      - ../Outputs/.local:/.local
     environment:
       - TZ=Asia/Tehran
       - MPLCONFIGDIR=/tmp/matplotlib
@@ -39,7 +41,7 @@ services:
     restart: always
     depends_on:
       - queue
-    image: robin-tts-engine:0.0.2
+    image: robin-tts-engine:0.0.3
     networks:
       robinnet: null
   backend:

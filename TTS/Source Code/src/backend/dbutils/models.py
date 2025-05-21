@@ -28,6 +28,7 @@ class Manager(Base):
     request_id = Column(String(255), nullable=False, unique=True)
     text = Column(String(4000), nullable=False)
     priority = Column(Integer, nullable=True)
+    lang = Column(String(255), nullable=True)
     model = Column(String(255), nullable=True)
     status = Column(Enum(WebhookStatus), nullable=False, default=WebhookStatus.pending)
     result = Column(String(4000), nullable=True)

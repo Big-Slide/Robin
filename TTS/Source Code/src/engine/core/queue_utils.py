@@ -21,14 +21,21 @@ async def process_message(
             # Parse the message body
             message_body = json.loads(message.body.decode())
             text = message_body["text"]
-            model = message_body["model"]
+            model = message_body.get("model", None)
             request_id = message_body["request_id"]
+            lang = message_body.get("lang", None)
 
             logger.info(
-                "Processing task", request_id=request_id, model=model, text=text
+                "Processing task",
+                request_id=request_id,
+                model=model,
+                text=text,
+                lang=lang,
             )
             output_path = f"{output_dir}/{request_id}.wav"
-            await tts_generator.do_tts(text=text, model=model, tmp_path=output_path)
+            await tts_generator.do_tts(
+                text=text, model=model, tmp_path=output_path, lang=lang
+            )
 
             result = {
                 "request_id": request_id,
