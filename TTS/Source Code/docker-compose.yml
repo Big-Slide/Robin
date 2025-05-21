@@ -32,6 +32,7 @@ services:
       - ../Models:/approot/models
       - ../Outputs:/approot/data
       - ../Models/cache:/.cache
+      - ../Outputs/.local:/.local
     environment:
       - TZ=Asia/Tehran
       - MPLCONFIGDIR=/tmp/matplotlib
