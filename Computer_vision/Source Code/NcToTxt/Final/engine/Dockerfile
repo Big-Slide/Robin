@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y \
 # Upgrade pip first
 RUN python -m pip install --upgrade pip
 
+RUN python -m pip install ultralytics==8.3.118 --timeout $PIP_TIMEOUT
+
+
 # Install Python dependencies one by one to better handle errors
 
 # Copy current directory contents into container
