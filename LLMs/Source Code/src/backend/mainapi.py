@@ -266,6 +266,60 @@ async def hr_pdf_comparison(
     return msg
 
 
+@app.post("/aihive-llm/api/v1/hrpdfcmp/zip-to-txt-offline")
+async def hr_pdf_zip_comparison(
+    file: UploadFile,
+    request_id: str = None,
+    priority: int = 1,
+    model: str = None,
+    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
+    db: Session = Depends(base.get_db),
+):
+    logger.info("request hr_pdf_comparison", request_id=request_id, model=model)
+    if request_id is None:
+        request_id = str(uuid.uuid4())
+
+    # Save uploaded file
+    input1_path = f"{temp_dir}/{request_id}_{file.filename}"
+    with open(input1_path, "wb") as f:
+        f.write(await file.read())
+
+    response = crud.add_request(
+        db=db,
+        request_id=request_id,
+        task="hr_pdf_zip_comparison",
+        input1_path=input1_path,
+        itime=datetime.now(tz=None),
+    )
+    if not response["status"]:
+        if os.path.exists(input1_path):
+            os.remove(input1_path)
+        return response
+
+    channel = await connection.channel()
+
+    # TODO: change input_path to binary data
+    message_body = {
+        "task": "hr_pdf_zip_comparison",
+        "input1_path": input1_path,
+        "request_id": request_id,
+        "model": model,
+    }
+
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=json.dumps(message_body).encode(),
+            headers={"request_id": request_id},
+        ),
+        routing_key="task_queue",
+    )
+    await channel.close()
+
+    msg = Message("en").INF_SUCCESS()
+    msg["data"] = {"request_id": request_id}
+    return msg
+
+
 @app.post("/aihive-llm/api/v1/hranlqus/txt-to-json-offline")
 async def hr_analysis_question(
     items: schemas.vm_request_hr_analysis_question,
