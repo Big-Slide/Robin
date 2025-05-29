@@ -5,6 +5,7 @@ from typing import List, Dict
 from config.config_handler import config
 import torch
 import soundfile as sf
+from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 
 logger.info("Loading synthesizer...")
 os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
@@ -54,14 +55,23 @@ models = {
         "lang": "fa",
         "type": "TTS",
     },
-    "female1-en": {"type": "kokoro"},
+    "female1-en": {"lang": "en", "type": "kokoro"},
+    "male1-ar": {
+        "model_dir": f"{models_dir}/MBZUAI/speecht5_tts_clartts_ar",
+        "lang": "ar",
+        "type": "transformers",
+    },
 }
 
 
 class TTSGenerator:
     def __init__(self):
         self.load_models(config.MODEL_IDs.split(","))
-        self._default_model_ids = {"fa": "male1-online-fa", "en": "female1-en"}
+        self._default_model_ids = {
+            "fa": "male1-online-fa",
+            "en": "female1-en",
+            "ar": "male1-ar",
+        }
 
     def delete_file_after_response(self, file_path: str):
         if os.path.exists(file_path):
@@ -100,6 +110,15 @@ class TTSGenerator:
                     f"{models_dir}/kokoro/voices/af_heart.pt", weights_only=True
                 )
                 logger.info("Model loaded", model_id=model_id)
+            elif models[model_id]["type"] == "transformers":
+                # https://huggingface.co/MBZUAI/speecht5_tts_clartts_ar
+                processor = SpeechT5Processor.from_pretrained(
+                    "MBZUAI/speecht5_tts_clartts_ar"
+                )
+                model = SpeechT5ForTextToSpeech.from_pretrained(
+                    "MBZUAI/speecht5_tts_clartts_ar"
+                )
+                vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
 
     async def do_tts(
         self, text: str, tmp_path: str, model: str = None, lang: str = "fa"
@@ -124,6 +143,16 @@ class TTSGenerator:
             gs, ps, audio = next(generator)
             logger.debug("TTS output", graphemes=gs, phonemes=ps)
             sf.write(tmp_path, audio, 24000)  # save each audio file
+        elif model == "male1-ar":
+            inputs = processor(text=text, return_tensors="pt")
+
+            # load xvector containing speaker's voice characteristics from a dataset
+            embeddings_dataset = load_dataset("herwoww/arabic_xvector_embeddings", split="validation")
+            speaker_embedding = torch.tensor(embeddings_dataset[105]["speaker_embeddings"]).unsqueeze(0)
+
+            speech = model.generate_speech(inputs["input_ids"], speaker_embedding, vocoder=vocoder)
+
+            sf.write(tmp_path, speech.numpy(), samplerate=16000)
         else:
             raise AssertionError("Model not found")
             # return JSONResponse(
