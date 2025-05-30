@@ -6,6 +6,10 @@ import PyPDF2
 from core.cv_generator import CVGenerator
 import json
 import re
+import zipfile
+import tempfile
+import os
+import asyncio
 
 
 class LLMGenerator:
@@ -29,6 +33,73 @@ class LLMGenerator:
         )
         self.cv_generator = CVGenerator(self.llm)
         self._current_model = id_model
+
+    async def _process_zip_pdfs(self, zip_path: str) -> Dict[str, str]:
+        """
+        Extract and process all PDF files from a ZIP archive.
+
+        Args:
+            zip_path: Path to the ZIP file
+
+        Returns:
+            Dictionary mapping PDF filenames to their extracted text content
+        """
+        pdf_contents = {}
+
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            # Get list of PDF files in the ZIP
+            pdf_files = [
+                f
+                for f in zip_ref.namelist()
+                if f.lower().endswith(".pdf") and not f.startswith("__MACOSX/")
+            ]
+
+            if not pdf_files:
+                return pdf_contents
+
+            # Create temporary directory for extraction
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Extract only PDF files
+                for pdf_file in pdf_files:
+                    zip_ref.extract(pdf_file, temp_dir)
+
+                # Process each PDF file
+                tasks = []
+                for pdf_file in pdf_files:
+                    temp_pdf_path = os.path.join(temp_dir, pdf_file)
+                    if os.path.exists(temp_pdf_path):
+                        tasks.append(self.__process_single_pdf(pdf_file, temp_pdf_path))
+
+                # Process all PDFs concurrently
+                if tasks:
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                    for result in results:
+                        if isinstance(result, tuple) and len(result) == 2:
+                            filename, content = result
+                            pdf_contents[filename] = content
+                        elif isinstance(result, Exception):
+                            print(f"Error processing PDF: {result}")
+
+        return pdf_contents
+
+    async def __process_single_pdf(self, filename: str, filepath: str) -> tuple:
+        """
+        Process a single PDF file and return filename with content.
+
+        Args:
+            filename: Original filename in the ZIP
+            filepath: Temporary file path
+
+        Returns:
+            Tuple of (filename, content)
+        """
+        try:
+            content = await self._process_pdf(filepath)
+            return filename, content
+        except Exception as e:
+            print(f"Error processing {filename}: {e}")
+            return filename, ""
 
     async def _process_pdf(self, filepath: str) -> str:
         pdf_content = ""
@@ -209,7 +280,47 @@ class LLMGenerator:
                         Be objective, detailed, and structured in your analysis.
                     """,
                 ),
-                ("human", f"Candidate A\n{pdf_text1}\n\nCandidate B\n{pdf_text2}"),
+                ("human", f"Candidate 1:\n{pdf_text1}\n\nCandidate 2:\n{pdf_text2}"),
+            ]
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
+        elif task == "hr_pdf_zip_comparison":
+            results = await self._process_zip_pdfs(input1_path)
+
+            human_message = ""
+            c = 1
+            for filename, content in results.items():
+                human_message += f"Candidate {c}:\n{content}\n\n"
+                c += 1
+
+            messages = [
+                (
+                    "system",
+                    """
+                        You are an intelligent assistant at Zenon Robotics. You will receive the full content of some CVs as plain text (extracted from PDF).
+                        
+                        Your task is to:
+                        1. Analyze all CVs based on standard parameters:
+                            - Full name
+                            - Contact information
+                            - Skills (technical and soft)
+                            - Work experience (roles, companies, dates)
+                            - Education
+                            - Languages
+                            - Certifications or professional training
+                            - Notable projects or achievements
+                        2. Compare all CVs based on the above attributes.
+                        3. For each parameter, highlight:
+                            - Which candidate has stronger or more relevant content
+                            - Any missing or incomplete information
+                        4. Respond in a clear and organized format, using the language of the CVs if all CVs are in the same language. If they're in different languages, respond in English for clarity.
+                        5. If either CV lacks any of the standard information, clearly mention which parts are missing and in which CV.
+                        
+                        Be objective, detailed, and structured in your analysis.
+                    """,
+                ),
+                ("human", human_message),
             ]
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
