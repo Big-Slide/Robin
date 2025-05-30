@@ -293,12 +293,13 @@ class LLMGenerator:
             for filename, content in results.items():
                 human_message += f"Candidate {c}:\n{content}\n\n"
                 c += 1
+            logger.debug(f"{human_message=}")
 
             messages = [
                 (
                     "system",
                     """
-                        You are an intelligent assistant at Zenon Robotics. You will receive the full content of some CVs as plain text (extracted from PDF).
+                        You are an intelligent assistant at Zenon Robotics. You will receive the full content of two or more CVs as plain text (extracted from PDF).
                         
                         Your task is to:
                         1. Analyze all CVs based on standard parameters:
