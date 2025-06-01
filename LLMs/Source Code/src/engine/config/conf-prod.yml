@@ -4,5 +4,6 @@ QUEUE_CONNECTION: amqp://guest:guest@queue/
 CORE_BASE_URL: http://core:11434
 MODEL_ID: llama3.1:8b-instruct-q8_0  # qwen3:14b,deepseek-r1:14b
 MODEL_TEMPERATURE: 0.3
-MODEL_NUM_PREDICT: 2048
+MODEL_NUM_PREDICT: 4096
+MODEL_NUM_CTX: 16384
 MODEL_TOP_P: 0.7
