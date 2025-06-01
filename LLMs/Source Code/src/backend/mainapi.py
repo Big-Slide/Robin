@@ -373,7 +373,7 @@ async def hr_pdf_zip_compare_and_match(
     message_body = {
         "task": "hr_pdf_zip_compare_and_match",
         "input1_path": input1_path,
-        "input_params": {"job_description": "job_description"},
+        "input_params": {"job_description": job_description},
         "request_id": request_id,
         "model": model,
     }
