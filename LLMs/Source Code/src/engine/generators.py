@@ -139,6 +139,9 @@ class LLMGenerator:
         output_path: str = None,
         model: str = None,
     ) -> Union[str, str]:
+        logger.debug(
+            f"{task=}, {input_params=}, {input1_path=}, {input2_path=}, {output_path=}, {model=}"
+        )
         self._set_model(model=model)
         if task == "hr_pdf_analysis":
             pdf_text = await self._process_pdf(input1_path)
@@ -174,7 +177,24 @@ class LLMGenerator:
             human_message = ""
             c = 1
             for filename, content in results.items():
-                human_message += f"CV {c}:\n{content}\n\n"
+                human_message += f'"CV {c}":\n{content}\n\n'
+                c += 1
+            logger.debug(f"{human_message=}")
+
+            messages = self.prompt_handler.get_messages(task, human_message)
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
+        elif task == "hr_pdf_zip_compare_and_match":
+            job_description = input_params["job_description"]
+
+            results = await self._process_zip_pdfs(input1_path)
+            human_message = ""
+            c = 1
+            for filename, content in results.items():
+                human_message += (
+                    f'"Job Description": {job_description}\n\n"CV {c}":\n{content}\n\n'
+                )
                 c += 1
             logger.debug(f"{human_message=}")
 
@@ -185,7 +205,6 @@ class LLMGenerator:
         elif task == "hr_analysis_question":
             questions = input_params["questions"]
             answers = input_params["answers"]
-            logger.debug(f"{questions=}, {answers=}")
             messages = self.prompt_handler.get_messages(
                 task, f"Questions:\n{questions}\n\nAnswers:{answers}"
             )

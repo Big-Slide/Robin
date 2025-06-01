@@ -328,16 +328,23 @@ async def hr_pdf_zip_comparison(
     return msg
 
 
-@app.post("/aihive-llm/api/v1/hrpdfcmp/zip-to-txt-offline")
-async def hr_pdf_zip_comparison(
+@app.post("/aihive-llm/api/v1/hrpdfmatch/zip-to-txt-offline")
+async def hr_pdf_zip_compare_and_match(
     file: UploadFile,
+    job_description: str,
     request_id: str = None,
     priority: int = 1,
     model: str = None,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    logger.info("request hr_pdf_comparison", request_id=request_id, model=model)
+    """
+    file:            [File] Zip file consist of CV pdfs
+    job_description: [str]  Description of job to find best candidate from CVs
+    """
+    logger.info(
+        "request hr_pdf_zip_compare_and_match", request_id=request_id, model=model
+    )
     if request_id is None:
         request_id = str(uuid.uuid4())
 
@@ -351,7 +358,7 @@ async def hr_pdf_zip_comparison(
     response = crud.add_request(
         db=db,
         request_id=request_id,
-        task="hr_pdf_zip_comparison",
+        task="hr_pdf_zip_compare_and_match",
         input1_path=input1_path,
         itime=datetime.now(tz=None),
     )
@@ -364,8 +371,9 @@ async def hr_pdf_zip_comparison(
 
     # TODO: change input_path to binary data
     message_body = {
-        "task": "hr_pdf_zip_comparison",
+        "task": "hr_pdf_zip_compare_and_match",
         "input1_path": input1_path,
+        "input_params": {"job_description": "job_description"},
         "request_id": request_id,
         "model": model,
     }
