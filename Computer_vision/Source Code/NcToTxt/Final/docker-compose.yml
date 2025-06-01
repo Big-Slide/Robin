@@ -32,6 +32,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./engine:/approot/src
       - ../../../Models/NcToTxt:/approot/models
+      - ../../../Models/NcToTxt/.EasyOCR:/.EasyOCR
       - ../../../Outputs/IDCardOCR:/approot/data
     environment:
       - TZ=Asia/Tehran
