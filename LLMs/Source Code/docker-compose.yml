@@ -15,7 +15,7 @@ services:
     networks:
       robinnet: null
   core:
-    image: ollama/ollama:0.9.0
+    image: docker.arvancloud.ir/ollama/ollama:0.9.0
     command: ["serve"]
     ports:
       - ${PORT_CORE}:11434
