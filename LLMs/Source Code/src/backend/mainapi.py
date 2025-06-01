@@ -108,7 +108,9 @@ async def hr_pdf_analysis(
         request_id = str(uuid.uuid4())
 
     # Save uploaded file
-    input1_path = f"{temp_dir}/{request_id}_{file.filename}"
+    current_day = datetime.now().strftime("%Y-%m/%d")
+    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
+    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
     with open(input1_path, "wb") as f:
         f.write(await file.read())
 
@@ -164,7 +166,9 @@ async def pdf_analysis(
         request_id = str(uuid.uuid4())
 
     # Save uploaded file
-    input1_path = f"{temp_dir}/{request_id}_{file.filename}"
+    current_day = datetime.now().strftime("%Y-%m/%d")
+    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
+    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
     with open(input1_path, "wb") as f:
         f.write(await file.read())
 
@@ -221,8 +225,10 @@ async def hr_pdf_comparison(
         request_id = str(uuid.uuid4())
 
     # Save uploaded file
-    input1_path = f"{temp_dir}/{request_id}_1_{file1.filename}"
-    input2_path = f"{temp_dir}/{request_id}_2_{file2.filename}"
+    current_day = datetime.now().strftime("%Y-%m/%d")
+    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
+    input1_path = f"{temp_dir}/{current_day}/{request_id}_1_{file1.filename}"
+    input2_path = f"{temp_dir}/{current_day}/{request_id}_2_{file2.filename}"
     with open(input1_path, "wb") as f:
         f.write(await file1.read())
     with open(input2_path, "wb") as f:
@@ -280,7 +286,9 @@ async def hr_pdf_zip_comparison(
         request_id = str(uuid.uuid4())
 
     # Save uploaded file
-    input1_path = f"{temp_dir}/{request_id}_{file.filename}"
+    current_day = datetime.now().strftime("%Y-%m/%d")
+    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
+    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
     with open(input1_path, "wb") as f:
         f.write(await file.read())
 
@@ -302,6 +310,70 @@ async def hr_pdf_zip_comparison(
     message_body = {
         "task": "hr_pdf_zip_comparison",
         "input1_path": input1_path,
+        "request_id": request_id,
+        "model": model,
+    }
+
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=json.dumps(message_body).encode(),
+            headers={"request_id": request_id},
+        ),
+        routing_key="task_queue",
+    )
+    await channel.close()
+
+    msg = Message("en").INF_SUCCESS()
+    msg["data"] = {"request_id": request_id}
+    return msg
+
+
+@app.post("/aihive-llm/api/v1/hrpdfmatch/zip-to-txt-offline")
+async def hr_pdf_zip_compare_and_match(
+    file: UploadFile,
+    job_description: str,
+    request_id: str = None,
+    priority: int = 1,
+    model: str = None,
+    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
+    db: Session = Depends(base.get_db),
+):
+    """
+    file:            [File] Zip file consist of CV pdfs
+    job_description: [str]  Description of job to find best candidate from CVs
+    """
+    logger.info(
+        "request hr_pdf_zip_compare_and_match", request_id=request_id, model=model
+    )
+    if request_id is None:
+        request_id = str(uuid.uuid4())
+
+    # Save uploaded file
+    current_day = datetime.now().strftime("%Y-%m/%d")
+    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
+    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
+    with open(input1_path, "wb") as f:
+        f.write(await file.read())
+
+    response = crud.add_request(
+        db=db,
+        request_id=request_id,
+        task="hr_pdf_zip_compare_and_match",
+        input1_path=input1_path,
+        itime=datetime.now(tz=None),
+    )
+    if not response["status"]:
+        if os.path.exists(input1_path):
+            os.remove(input1_path)
+        return response
+
+    channel = await connection.channel()
+
+    # TODO: change input_path to binary data
+    message_body = {
+        "task": "hr_pdf_zip_compare_and_match",
+        "input1_path": input1_path,
+        "input_params": {"job_description": job_description},
         "request_id": request_id,
         "model": model,
     }
