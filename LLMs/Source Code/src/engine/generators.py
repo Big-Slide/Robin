@@ -11,6 +11,7 @@ import tempfile
 import os
 import asyncio
 from core.prompt import PromptHandler
+import base64
 
 
 class LLMGenerator:
@@ -82,9 +83,65 @@ class LLMGenerator:
                             filename, content = result
                             pdf_contents[filename] = content
                         elif isinstance(result, Exception):
-                            print(f"Error processing PDF: {result}")
+                            logger.error(f"Error processing PDF: {result}")
 
         return pdf_contents
+
+    async def _process_zip_images(self, zip_path: str) -> Dict[str, str]:
+        """
+        Extract and process all PDF files from a ZIP archive.
+
+        Args:
+            zip_path: Path to the ZIP file
+
+        Returns:
+            Dictionary mapping Image filenames to their base64 encoded text content
+        """
+        images_encoded = {}
+
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            # Get list of Image files in the ZIP
+            image_files = [
+                f
+                for f in zip_ref.namelist()
+                if (
+                    f.lower().endswith(".jpg")
+                    or f.lower().endswith(".jpeg")
+                    or f.lower().endswith(".png")
+                )
+                and not f.startswith("__MACOSX/")
+            ]
+
+            if not image_files:
+                return images_encoded
+
+            # Create temporary directory for extraction
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Extract only PDF files
+                for image_file in image_files:
+                    zip_ref.extract(image_file, temp_dir)
+
+                # Process each Image file
+                tasks = []
+                for image_file in image_files:
+                    temp_image_path = os.path.join(temp_dir, image_file)
+                    if os.path.exists(temp_image_path):
+                        tasks.append(
+                            self.__process_single_image(image_file, temp_image_path)
+                        )
+
+                # Process all Images concurrently
+                if tasks:
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                    for result in results:
+                        if isinstance(result, tuple) and len(result) == 2:
+                            filename, content = result
+                            images_encoded[filename] = content
+                        elif isinstance(result, Exception):
+                            logger.error(f"Error processing Image: {result}")
+
+        return images_encoded
 
     async def __process_single_pdf(self, filename: str, filepath: str) -> tuple:
         """
@@ -101,7 +158,25 @@ class LLMGenerator:
             content = await self._process_pdf(filepath)
             return filename, content
         except Exception as e:
-            print(f"Error processing {filename}: {e}")
+            logger.error(f"Error processing {filename}: {e}")
+            return filename, ""
+
+    async def __process_single_image(self, filename: str, filepath: str) -> tuple:
+        """
+        Process a single PDF file and return filename with content.
+
+        Args:
+            filename: Original filename in the ZIP
+            filepath: Temporary file path
+
+        Returns:
+            Tuple of (filename, content)
+        """
+        try:
+            content = await self._process_image(filepath)
+            return filename, content
+        except Exception as e:
+            logger.error(f"Error processing {filename}: {e}")
             return filename, ""
 
     async def _process_pdf(self, filepath: str) -> str:
@@ -111,6 +186,10 @@ class LLMGenerator:
             for page in pdf_reader.pages:
                 pdf_content += page.extract_text() + "\n"
         return pdf_content
+
+    async def _process_image(self, filepath: str) -> str:
+        with open(filepath, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
 
     def _extract_json_from_response(self, response_text):
         """
@@ -231,6 +310,44 @@ class LLMGenerator:
         elif task == "chat":
             prompt = input_params["prompt"]
             messages = self.prompt_handler.get_messages(task, prompt)
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
+        elif task == "painting_analysis":
+            if model is None:
+                self._set_model(config.MODEL_MULTIMODAL_ID)
+            lang = input_params["lang"]
+            results = await self._process_zip_images(input1_path)
+            human_message = []
+            for filename, content in results.items():
+                human_message.append(
+                    {
+                        "type": "image_url",
+                        "image_url": f"data:image/jpeg;base64,{content}",
+                    }
+                )
+            if lang == "en":
+                human_message.append(
+                    {
+                        "type": "text",
+                        "text": "Please provide a comprehensive psychological analysis of this child's artwork. Please respond in English only",
+                    }
+                )
+            elif lang == "fa":
+                human_message.append(
+                    {
+                        "type": "text",
+                        "text": "Please provide a comprehensive psychological analysis of this child's artwork. Please respond in Persian only",
+                    }
+                )
+            elif lang == "ar":
+                human_message.append(
+                    {
+                        "type": "text",
+                        "text": "Please provide a comprehensive psychological analysis of this child's artwork. Please respond in Arabic only",
+                    }
+                )
+            logger.debug(f"{human_message=}")
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None

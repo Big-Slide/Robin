@@ -94,7 +94,7 @@ app.add_middleware(
 base_mdl = base.Base()
 
 
-@app.post("/aihive-llm/api/v1/hrpdfanl/pdf-to-json-offline")
+@app.post("/aihive-llm/api/v1/hrpdfanl/pdf-to-json-offline", tags=["HR"])
 async def hr_pdf_analysis(
     file: UploadFile,
     request_id: str = None,
@@ -152,7 +152,7 @@ async def hr_pdf_analysis(
     return msg
 
 
-@app.post("/aihive-llm/api/v1/pdfanl/pdf-to-txt-offline")
+@app.post("/aihive-llm/api/v1/pdfanl/pdf-to-txt-offline", tags=["General"])
 async def pdf_analysis(
     file: UploadFile,
     request_id: str = None,
@@ -210,7 +210,7 @@ async def pdf_analysis(
     return msg
 
 
-@app.post("/aihive-llm/api/v1/hrpdfcmp/pdf-to-txt-offline")
+@app.post("/aihive-llm/api/v1/hrpdfcmp/pdf-to-txt-offline", tags=["HR"])
 async def hr_pdf_comparison(
     file1: UploadFile,
     file2: UploadFile,
@@ -272,7 +272,7 @@ async def hr_pdf_comparison(
     return msg
 
 
-@app.post("/aihive-llm/api/v1/hrpdfcmp/zip-to-txt-offline")
+@app.post("/aihive-llm/api/v1/hrpdfcmp/zip-to-txt-offline", tags=["HR"])
 async def hr_pdf_zip_comparison(
     file: UploadFile,
     request_id: str = None,
@@ -328,7 +328,7 @@ async def hr_pdf_zip_comparison(
     return msg
 
 
-@app.post("/aihive-llm/api/v1/hrpdfmatch/zip-to-txt-offline")
+@app.post("/aihive-llm/api/v1/hrpdfmatch/zip-to-txt-offline", tags=["HR"])
 async def hr_pdf_zip_compare_and_match(
     file: UploadFile,
     job_description: str,
@@ -392,7 +392,7 @@ async def hr_pdf_zip_compare_and_match(
     return msg
 
 
-@app.post("/aihive-llm/api/v1/hranlqus/txt-to-json-offline")
+@app.post("/aihive-llm/api/v1/hranlqus/txt-to-json-offline", tags=["HR"])
 async def hr_analysis_question(
     items: schemas.vm_request_hr_analysis_question,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
@@ -442,7 +442,7 @@ async def hr_analysis_question(
     return msg
 
 
-@app.post("/aihive-llm/api/v1/cvgenerate/txt-to-pdf-offline")
+@app.post("/aihive-llm/api/v1/cvgenerate/txt-to-pdf-offline", tags=["CV"])
 async def cv_generate_offline(
     items: schemas.vm_request_cv_generator,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
@@ -491,7 +491,7 @@ async def cv_generate_offline(
     return msg
 
 
-@app.post("/aihive-llm/api/v1/chat/txt-to-txt-offline")
+@app.post("/aihive-llm/api/v1/chat/txt-to-txt-offline", tags=["Chat"])
 async def chat(
     items: schemas.vm_request_chat,
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
@@ -522,6 +522,66 @@ async def chat(
         "input_params": items.model_dump(exclude={"request_id", "priority", "model"}),
         "request_id": request_id,
         "model": items.model,
+    }
+
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=json.dumps(message_body).encode(),
+            headers={"request_id": request_id},
+        ),
+        routing_key="task_queue",
+    )
+    await channel.close()
+
+    msg = Message("en").INF_SUCCESS()
+    msg["data"] = {"request_id": request_id}
+    return msg
+
+
+@app.post(
+    "/aihive-llm/api/v1/painting-analysis/zip-to-txt-offline", tags=["Psychology"]
+)
+async def painting_analysis(
+    file: UploadFile,
+    request_id: str = None,
+    priority: int = 1,
+    lang: str = "en",
+    model: str = None,
+    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
+    db: Session = Depends(base.get_db),
+):
+    logger.info("request painting_analysis", request_id=request_id, model=model)
+    if request_id is None:
+        request_id = str(uuid.uuid4())
+
+    # Save uploaded file
+    current_day = datetime.now().strftime("%Y-%m/%d")
+    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
+    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
+    with open(input1_path, "wb") as f:
+        f.write(await file.read())
+
+    response = crud.add_request(
+        db=db,
+        request_id=request_id,
+        task="painting_analysis",
+        input1_path=input1_path,
+        itime=datetime.now(tz=None),
+    )
+    if not response["status"]:
+        if os.path.exists(input1_path):
+            os.remove(input1_path)
+        return response
+
+    channel = await connection.channel()
+
+    # TODO: change input_path to binary data
+    message_body = {
+        "task": "painting_analysis",
+        "input1_path": input1_path,
+        "input_params": {"lang": lang},
+        "request_id": request_id,
+        "model": model,
     }
 
     await channel.default_exchange.publish(

@@ -23,6 +23,7 @@ services:
       - ../Models/core:/root/.ollama/models      # Place your `.bin`/model folders here
       - ./src/core/config/config.json:/root/.ollama/config.json  # Ollama config
       - ../Outputs/core/logs:/root/.ollama/logs          # Logs & state data
+      - ../Outputs:/approot/data
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/health"]
