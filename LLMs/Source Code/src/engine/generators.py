@@ -32,7 +32,7 @@ class LLMGenerator:
             temperature=config.MODEL_TEMPERATURE,
             num_predict=config.MODEL_NUM_PREDICT,
             top_p=config.MODEL_TOP_P,
-            num_ctx=131072,
+            num_ctx=16384,
         )
         self.cv_generator = CVGenerator(self.llm)
         self._current_model = id_model
