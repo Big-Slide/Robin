@@ -452,6 +452,8 @@ class LLMGenerator:
             filetype = await self._get_file_type(input1_path)
             human_message = []
             if filetype == "image":
+                with open(input1_path, "rb") as image_file:
+                    content = base64.b64encode(image_file.read()).decode("utf-8")
                 human_message.append(
                     {
                         "type": "image_url",
