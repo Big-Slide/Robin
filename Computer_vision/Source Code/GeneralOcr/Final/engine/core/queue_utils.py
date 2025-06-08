@@ -34,24 +34,21 @@ async def process_image(encoded_image):
         # Process image using the process_image method
         original_image, annotated_image, text_data = processor.process_image(frame)
 
-        # Convert text_data to a more suitable format
-        ocr_results = {}
-
-        # Process text data into a structured format
+        # Convert text_data to a single string
+        text_list = []
         for text_entry in text_data['texts']:
-            field_key = f"field_{text_entry['index']}"
-            ocr_results[field_key] = text_entry['text']
+            text_list.append(text_entry['text'])
 
-        if not ocr_results:
+        # Join all text with spaces
+        ocr_results = ' '.join(text_list)
+
+        if not ocr_results.strip():
             logger.warning("No text detected in the image")
-            return {}
+            return ""
 
         logger.info(f"Successfully extracted text from image")
         logger.info(f"Skew correction applied: {text_data['skew_corrected']}")
-
-        # Log detected fields
-        for field, value in ocr_results.items():
-            logger.info(f"Extracted field: {field}, value: {value}")
+        logger.info(f"Extracted text: {ocr_results}")
 
         # Optional: save processed image
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -64,7 +61,7 @@ async def process_image(encoded_image):
 
     except Exception as e:
         logger.exception(f"Error processing image: {e}")
-        return {}
+        return ""
 
 
 async def process_message(
@@ -104,7 +101,7 @@ async def process_message(
             # Uncomment if you want to save the processed image
             # cv2.imwrite(output_path, annotated_image)
 
-            if ocr_results:
+            if ocr_results.strip():
                 # Successful processing
                 result = {
                     "request_id": request_id,
