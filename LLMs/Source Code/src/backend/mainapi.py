@@ -598,6 +598,64 @@ async def painting_analysis(
     return msg
 
 
+@app.post("/aihive-llm/api/v1/ocr/any-to-json-offline", tags=["OCR"])
+async def ocr(
+    file: UploadFile,
+    request_id: str = None,
+    priority: int = 1,
+    model: str = None,
+    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
+    db: Session = Depends(base.get_db),
+):
+    logger.info("request ocr", request_id=request_id, model=model)
+    if request_id is None:
+        request_id = str(uuid.uuid4())
+
+    # Save uploaded file
+    current_day = datetime.now().strftime("%Y-%m/%d")
+    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
+    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
+    with open(input1_path, "wb") as f:
+        f.write(await file.read())
+
+    response = crud.add_request(
+        db=db,
+        request_id=request_id,
+        model=model,
+        task="ocr",
+        input1_path=input1_path,
+        itime=datetime.now(tz=None),
+    )
+    if not response["status"]:
+        if os.path.exists(input1_path):
+            os.remove(input1_path)
+        return response
+
+    channel = await connection.channel()
+
+    # TODO: change input_path to binary data
+    message_body = {
+        "task": "ocr",
+        "input1_path": input1_path,
+        "input2_path": None,
+        "request_id": request_id,
+        "model": model,
+    }
+
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=json.dumps(message_body).encode(),
+            headers={"request_id": request_id},
+        ),
+        routing_key="task_queue",
+    )
+    await channel.close()
+
+    msg = Message("en").INF_SUCCESS()
+    msg["data"] = {"request_id": request_id}
+    return msg
+
+
 @app.get("/aihive-llm/api/v1/status/{request_id}")
 async def get_status(request_id: str, db: Session = Depends(base.get_db)):
     logger.info("/llm/status", request_id=request_id)
