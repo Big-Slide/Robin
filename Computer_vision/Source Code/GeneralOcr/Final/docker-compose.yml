@@ -4,8 +4,8 @@ services:
     ports:
       - ${PORT_RABBITMQ_MANAGEMENT}:15672
     volumes:
-      - ../../../Outputs/IDCardOCR/rabbitmq_logs:/var/log/rabbitmq
-      - ../../../Outputs/IDCardOCR/rabbitmq_data:/var/lib/rabbitmq
+      - ../../../Outputs/GeneralOcr/rabbitmq_logs:/var/log/rabbitmq
+      - ../../../Outputs/GeneralOcr/rabbitmq_data:/var/lib/rabbitmq
       - ./rabbitmq/config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     environment:
       - TZ=Asia/Tehran
@@ -31,9 +31,9 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./engine:/approot/src
-      - ../../../Models/NcToTxt:/approot/models
+      - ../../../Models/ImageToTxt:/approot/models
       - ../../../Models/NcToTxt/.EasyOCR:/.EasyOCR
-      - ../../../Outputs/IDCardOCR:/approot/data
+      - ../../../Outputs/GeneralOcr:/approot/data
     environment:
       - TZ=Asia/Tehran
       - MPLCONFIGDIR=/tmp/matplotlib
@@ -42,7 +42,7 @@ services:
     restart: always
     depends_on:
       - queue
-    image: robin-nctotxt-engine:0.0.2
+    image: robin-imagetotxt-engine:0.0.2
     networks:
       robinnet: null
 
@@ -61,7 +61,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./backend:/approot/src
-      - ../../../Outputs/IDCardOCR:/approot/data
+      - ../../../Outputs/GeneralOcr:/approot/data
     environment:
       - TZ=Asia/Tehran
       - MODE
@@ -70,7 +70,7 @@ services:
     depends_on:
       - queue
       - engine
-    image: robin-nctotxt-backend:0.0.2
+    image: robin-imagetotxt-backend:0.0.2
     networks:
       robinnet: null
 

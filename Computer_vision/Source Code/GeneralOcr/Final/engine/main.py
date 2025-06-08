@@ -10,7 +10,7 @@ from core.queue_utils import process_message
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
 else:
-    log_dir = "../../../../Outputs/IDCardOCR/result"
+    log_dir = "../../../../Outputs/GENERALOCR/result"
 os.makedirs(log_dir, exist_ok=True)
 
 # Configure logging
@@ -56,14 +56,14 @@ async def main():
 
         # Declare queues
         queue = await channel.declare_queue(
-            "nc_ocr_queue",
+            "ocr_queue",
             durable=True,
             # arguments={"x-max-priority": 10}
         )
 
         # Declare result queue
         await result_channel.declare_queue(
-            "nc_ocr_result_queue",
+            "ocr_result_queue",
             durable=True
         )
 

@@ -24,7 +24,7 @@ class Manager(Base):
     """
     Database model for managing NC to Text OCR requests
     """
-    __tablename__ = "nc_ocr_manager"
+    __tablename__ = "general_ocr_manager"
 
     id = Column(String(255), primary_key=True, default=generate_uuid)
     request_id = Column(String(255), nullable=False, unique=True)

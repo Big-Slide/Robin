@@ -11,11 +11,11 @@ from dbutils.schemas import WebhookStatus
 
 async def consume_results(connection: aio_pika.RobustConnection, db: Session):
     """
-    Consume results from the OCR
+    Consume results from the OCR process
     """
     async with connection:
         channel = await connection.channel()
-        queue = await channel.declare_queue("nc_ocr_result_queue", durable=True)
+        queue = await channel.declare_queue("ocr_result_queue", durable=True)
 
         async for message in queue:
             async with message.process():

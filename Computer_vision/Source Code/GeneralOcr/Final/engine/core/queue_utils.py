@@ -1,4 +1,4 @@
-from generators import IDCardProcessor
+from generators import TextProcessor
 import aio_pika
 import json
 import base64
@@ -11,12 +11,12 @@ from datetime import datetime
 if os.environ.get("MODE", "dev") == "prod":
     output_dir = "/approot/data/result"
 else:
-    output_dir = "../../../../../Outputs/IDCardOCR/result"
+    output_dir = "../../../../../Outputs/GENERALOCR/result"
 os.makedirs(output_dir, exist_ok=True)
 
 
 async def process_image(encoded_image):
-    logger.info("Starting ID card OCR processing")
+    logger.info("Starting OCR processing with skew correction")
     try:
         # Decode base64 image
         image_data = base64.b64decode(encoded_image)
@@ -28,37 +28,40 @@ async def process_image(encoded_image):
 
         logger.info("Image successfully decoded")
 
-        # Create an instance of IDCardProcessor
-        processor = IDCardProcessor()
+        # Create an instance of TextProcessor
+        processor = TextProcessor()
 
-        # Process ID card using the detect_and_process_id_card method
-        _, processed_images, text_data = processor.detect_and_process_id_card(frame)
+        # Process image using the process_image method
+        original_image, annotated_image, text_data = processor.process_image(frame)
 
-        # Convert text_data to a more suitable format if needed
-        ocr_results = {}
+        # Convert text_data to a single string
+        text_list = []
+        for text_entry in text_data['texts']:
+            text_list.append(text_entry['text'])
 
-        # If text data exists, process it into a structured format
-        if text_data:
-            for card_idx, card_data in enumerate(text_data):
-                for text_entry in card_data['texts']:
-                    field_key = f"field_{text_entry['index']}"
-                    ocr_results[field_key] = text_entry['text']
+        # Join all text with spaces
+        ocr_results = ' '.join(text_list)
 
-        if not ocr_results:
-            logger.warning("No ID card data detected in the image")
-            return {}
+        if not ocr_results.strip():
+            logger.warning("No text detected in the image")
+            return ""
 
-        logger.info(f"Successfully extracted data from ID card")
+        logger.info(f"Successfully extracted text from image")
+        logger.info(f"Skew correction applied: {text_data['skew_corrected']}")
+        logger.info(f"Extracted text: {ocr_results}")
 
-        # Log detected fields
-        for field, value in ocr_results.items():
-            logger.info(f"Extracted field: {field}, value: {value}")
+        # Optional: save processed image
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        request_id = "image_ocr"  # This will be overridden with the actual request_id in process_message
+        output_path = f"{output_dir}/{request_id}_{timestamp}.jpg"
+        # Uncomment to save the processed image
+        # cv2.imwrite(output_path, annotated_image)
 
         return ocr_results
 
     except Exception as e:
         logger.exception(f"Error processing image: {e}")
-        return {}
+        return ""
 
 
 async def process_message(
@@ -74,7 +77,7 @@ async def process_message(
             priority = message_body.get("priority", 1)
 
             logger.info(
-                "Processing ID card OCR task", request_id=request_id, priority=priority
+                "Processing OCR task", request_id=request_id, priority=priority
             )
 
             # Publish in-progress status
@@ -86,20 +89,19 @@ async def process_message(
                     }).encode(),
                     headers={"request_id": request_id}
                 ),
-                routing_key="nc_ocr_result_queue",
+                routing_key="ocr_result_queue",
             )
 
             # Process the image
             ocr_results = await process_image(encoded_image)
 
-            # Optional: save processed image if needed
+            # Optional: save processed image (output path will use request_id)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_path = f"{output_dir}/{request_id}_{timestamp}.jpg"
             # Uncomment if you want to save the processed image
-            # annotated_frame = frame.copy()  # Create annotated frame with bounding boxes
-            # cv2.imwrite(output_path, annotated_frame)
+            # cv2.imwrite(output_path, annotated_image)
 
-            if ocr_results:
+            if ocr_results.strip():
                 # Successful processing
                 result = {
                     "request_id": request_id,
@@ -107,11 +109,11 @@ async def process_message(
                     "results": {"ocr_data": ocr_results},
                 }
             else:
-                # No ID card data detected or processing error
+                # No text detected or processing error
                 result = {
                     "request_id": request_id,
                     "status": "failed",
-                    "error": "No ID card data detected or processing error"
+                    "error": "No text detected or processing error"
                 }
 
         except Exception as e:
@@ -128,5 +130,5 @@ async def process_message(
                 body=json.dumps(result).encode(),
                 headers={"request_id": result["request_id"]}
             ),
-            routing_key="nc_ocr_result_queue",
+            routing_key="ocr_result_queue",
         )

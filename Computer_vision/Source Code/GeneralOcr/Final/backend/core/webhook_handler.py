@@ -6,13 +6,11 @@ from sqlalchemy.orm import Session
 from dbutils import crud
 import json
 
-
 base_url = f"{config['AIHIVE_ADDR']}/api/Request"
 
 
 def __generate_url(request_id: str) -> str:
-    # TODO: read link from db
-    link = f"{config['BASE_URL_FILE_LINK']}/aihive-nctotxt/api/v1/file/{request_id}"
+    link = f"{config['BASE_URL_FILE_LINK']}/api/v1/file/{request_id}"
     return link
 
 
@@ -29,12 +27,11 @@ def set_inprogress(request_id: str) -> bool:
     params = {"status": WebhookStatus.in_progress.value, "output": "{}"}
     headers = {"Accept": "*/*"}
     response = requests.put(url, params=params, headers=headers)
-    # response.raise_for_status()
+
     if response.status_code == 200:
         logger.info(
             "Webhook-set_inprogress",
             status_code=response.status_code,
-            # content=response.content,
         )
         return True
     else:
@@ -61,7 +58,7 @@ def set_completed(db: Session, request_id: str) -> bool:
 
         # Check if we have result data
         if task.result is not None:
-            # Create JSON output
+            # Create JSON output with OCR data
             output_data = {"result": task.result}
             output_json = json.dumps(output_data)
 
@@ -88,7 +85,6 @@ def set_completed(db: Session, request_id: str) -> bool:
         logger.info(
             "Webhook-set_completed",
             status_code=response.status_code,
-            # content=response.content,
         )
         return True
     else:
@@ -97,18 +93,19 @@ def set_completed(db: Session, request_id: str) -> bool:
             status_code=response.status_code,
             content=response.content,
         )
+        return False
+
 
 def set_failed(request_id: str) -> bool:
     url = base_url + f"/{request_id}"
     params = {"status": WebhookStatus.failed.value, "output": "{}"}
     headers = {"Accept": "*/*"}
     response = requests.put(url, params=params, headers=headers)
-    # response.raise_for_status()
+
     if response.status_code == 200:
         logger.info(
             "Webhook-set_failed",
             status_code=response.status_code,
-            # content=response.content,
         )
         return True
     else:
