@@ -32,6 +32,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./engine:/approot/src
       - ../../../Models/ImageToTxt:/approot/models
+      - ../../../Models/NcToTxt/.EasyOCR:/.EasyOCR
       - ../../../Outputs/GeneralOcr:/approot/data
     environment:
       - TZ=Asia/Tehran
@@ -41,7 +42,7 @@ services:
     restart: always
     depends_on:
       - queue
-    image: robin-Imagetotxt-engine:0.0.2
+    image: robin-imagetotxt-engine:0.0.2
     networks:
       robinnet: null
 
