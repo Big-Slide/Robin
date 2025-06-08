@@ -4,8 +4,8 @@ services:
     ports:
       - ${PORT_RABBITMQ_MANAGEMENT}:15672
     volumes:
-      - ../../../Outputs/IDCardOCR/rabbitmq_logs:/var/log/rabbitmq
-      - ../../../Outputs/IDCardOCR/rabbitmq_data:/var/lib/rabbitmq
+      - ../../../Outputs/NcToTxt/rabbitmq_logs:/var/log/rabbitmq
+      - ../../../Outputs/NcToTxt/rabbitmq_data:/var/lib/rabbitmq
       - ./rabbitmq/config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     environment:
       - TZ=Asia/Tehran
@@ -33,7 +33,7 @@ services:
       - ./engine:/approot/src
       - ../../../Models/NcToTxt:/approot/models
       - ../../../Models/NcToTxt/.EasyOCR:/.EasyOCR
-      - ../../../Outputs/IDCardOCR:/approot/data
+      - ../../../Outputs/NcToTxt:/approot/data
     environment:
       - TZ=Asia/Tehran
       - MPLCONFIGDIR=/tmp/matplotlib
@@ -61,7 +61,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./backend:/approot/src
-      - ../../../Outputs/IDCardOCR:/approot/data
+      - ../../../Outputs/NcToTxt:/approot/data
     environment:
       - TZ=Asia/Tehran
       - MODE

@@ -23,7 +23,7 @@ from dbutils.database import SessionLocal
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
 else:
-    log_dir = "../../../../Outputs/IDCardOCR/result"
+    log_dir = "../../../../Outputs/NcToTxt/result"
 os.makedirs(log_dir, exist_ok=True)
 
 logger.remove()

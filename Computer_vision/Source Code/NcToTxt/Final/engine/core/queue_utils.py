@@ -11,7 +11,7 @@ from datetime import datetime
 if os.environ.get("MODE", "dev") == "prod":
     output_dir = "/approot/data/result"
 else:
-    output_dir = "../../../../../Outputs/IDCardOCR/result"
+    output_dir = "../../../../../Outputs/NcToTxt/result"
 os.makedirs(output_dir, exist_ok=True)
 
 
