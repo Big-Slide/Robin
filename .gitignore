@@ -15,3 +15,5 @@ engine/model/keypoint_classifier/keypoint.csv
 .idea
 
 .DS_store
+
+.env

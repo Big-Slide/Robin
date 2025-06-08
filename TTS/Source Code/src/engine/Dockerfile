@@ -12,6 +12,8 @@ RUN python -m pip install --upgrade pip
 
 RUN python -m pip install TTS==0.22.0 torch==2.6.0+cpu torchaudio==2.6.0+cpu --extra-index-url https://download.pytorch.org/whl/cpu --timeout $PIP_TIMEOUT
 
+RUN python -m pip install kokoro==0.9.4 --timeout $PIP_TIMEOUT
+
 ADD ./requirements.txt /srv/
 RUN python -m pip install --timeout $PIP_TIMEOUT -r /srv/requirements.txt
 

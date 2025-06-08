@@ -126,6 +126,10 @@ class Message:
                 "fa": "شناسه درخواست تکراری است",
                 "en": "Request ID is duplicate",
             },
+            "E135": {
+                "fa": "این زبان پشتیبانی نمی شود",
+                "en": "This language is not supported",
+            },
             "S100": {"fa": "موفق", "en": "Success"},
         }
 
@@ -408,6 +412,14 @@ class Message:
 
     def ERR_DUPLICATE_REQUEST_ID(self, status: bool = False):
         code = "E134"
+        return {
+            "status": status,
+            "code": code,
+            "message": self.get_msg_from_code(code=code),
+        }
+    
+    def ERR_LANG_NOT_SUPPORTED(self, status: bool = False):
+        code = "E135"
         return {
             "status": status,
             "code": code,

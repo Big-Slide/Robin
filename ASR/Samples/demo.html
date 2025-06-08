@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASR Service Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+        }
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        input[type="file"] {
+            margin-bottom: 20px;
+        }
+        .status-container {
+            margin-top: 20px;
+        }
+        .status {
+            padding: 10px;
+            background-color: #e9e9e9;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>ASR Service Demo</h2>
+        
+        <label for="audioFile">Select Audio File (ogg format):</label>
+        <input type="file" id="audioFile" accept="audio/ogg">
+        <br>
+        <button class="button" id="uploadButton">Upload Audio</button>
+
+        <div class="status-container">
+            <h3>Check Transcription Status</h3>
+            <input type="text" id="requestId" placeholder="Enter Request ID">
+            <button class="button" id="checkStatusButton">Check Status</button>
+            
+            <div id="statusResult" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const uploadButton = document.getElementById('uploadButton');
+        const checkStatusButton = document.getElementById('checkStatusButton');
+        const audioFileInput = document.getElementById('audioFile');
+        const requestIdInput = document.getElementById('requestId');
+        const statusResult = document.getElementById('statusResult');
+
+        let requestId = '';
+
+        // Upload audio file
+        uploadButton.addEventListener('click', () => {
+            const file = audioFileInput.files[0];
+            if (!file) {
+                alert('Please select an audio file!');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio_file', file);
+
+            fetch('http://192.168.0.13:8001/aihive-sptotxt/api/v1/speech-to-text-offline?priority=1', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status) {
+                    requestId = data.data.request_id;
+                    alert('Audio uploaded successfully. Request ID: ' + requestId);
+                    requestIdInput.value = requestId;  // Automatically fill the request ID for checking status
+                } else {
+                    alert('Error uploading audio');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading the audio');
+            });
+        });
+
+        // Check status of transcription
+        checkStatusButton.addEventListener('click', () => {
+            const enteredRequestId = requestIdInput.value;
+            if (!enteredRequestId) {
+                alert('Please enter a request ID!');
+                return;
+            }
+
+            fetch(`http://192.168.0.13:8001/aihive-sptotxt/api/v1/status/${enteredRequestId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status) {
+                    const result = data.data.result || 'Transcription not available yet.';
+                    statusResult.textContent = `Transcription: ${result}`;
+                } else {
+                    statusResult.textContent = 'Error retrieving transcription status.';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                statusResult.textContent = 'An error occurred while checking the status.';
+            });
+        });
+    </script>
+</body>
+</html>
