@@ -348,6 +348,7 @@ class LLMGenerator:
                     }
                 )
             logger.debug(f"{human_message=}")
+            messages = self.prompt_handler.get_messages(task, human_message)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
