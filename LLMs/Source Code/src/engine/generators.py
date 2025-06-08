@@ -12,6 +12,7 @@ import os
 import asyncio
 from core.prompt import PromptHandler
 import base64
+from pathlib import Path
 
 
 class LLMGenerator:
@@ -205,7 +206,7 @@ class LLMGenerator:
         await asyncio.sleep(0)
 
         # Extract file extension
-        extension = os.Path(filename).suffix.lower()
+        extension = Path(filename).suffix.lower()
 
         # File type mappings
         file_types = {
