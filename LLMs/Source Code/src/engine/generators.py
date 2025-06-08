@@ -347,11 +347,12 @@ class LLMGenerator:
                         "text": "Please provide a comprehensive psychological analysis of this child's artwork. Please respond in Arabic only",
                     }
                 )
+            else:
+                raise ValueError(f"lang {lang} is not supported")
             logger.debug(f"{human_message=}")
             messages = self.prompt_handler.get_messages(task, human_message)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         else:
-            pass
-        return {}
+            raise ValueError(f"task {task} is not supported")
