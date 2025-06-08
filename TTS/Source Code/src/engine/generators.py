@@ -90,6 +90,7 @@ class TTSGenerator:
                 logger.info("Model loaded", model_id=model_id)
             elif models[model_id]["type"] == "transformers":
                 # https://huggingface.co/MBZUAI/speecht5_tts_clartts_ar
+                self._synthesizers[model_id] = {}
                 self._synthesizers[model_id]["speaker_embedding"] = models[model_id][
                     "speaker_embedding"
                 ]
