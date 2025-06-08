@@ -448,7 +448,7 @@ class LLMGenerator:
         elif task == "ocr":
             if model is None:
                 self._set_model(config.MODEL_MULTIMODAL_ID)
-            filetype = self._get_file_type(input1_path)
+            filetype = await self._get_file_type(input1_path)
             human_message = []
             if filetype == "image":
                 human_message.append(
