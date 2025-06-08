@@ -19,6 +19,7 @@ import sys
 from starlette.middleware.cors import CORSMiddleware
 from core import base
 from dbutils.database import SessionLocal
+from typing import Optional
 
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
@@ -65,7 +66,13 @@ async def lifespan(app: FastAPI):
         await connection.close()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="OCR Service API",
+    description="API for OCR processing with skew correction",
+    version=__version__,
+    lifespan=lifespan
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -73,18 +80,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 base_mdl = base.Base()
 
 
-@app.post("aihive-ocr/api/v1/image-to-txt-offline")
+@app.post("/aihive-ocr/api/v1/image-to-txt-offline")
 async def process_image(
-        image: UploadFile = File(...),
-        request_id: str = Form(None),
-        priority: int = Form(1),
+        image: UploadFile = File(..., description="Image file to process for OCR"),
+        request_id: Optional[str] = Form(None, description="Optional request ID"),
+        priority: int = Form(1, description="Processing priority (1-10)"),
         connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
         db: Session = Depends(base.get_db),
 ):
-    logger.info("/api/v1/ocr", image=image.filename, request_id=request_id)
+    """
+    Process an image for OCR text extraction with skew correction.
+
+    - **image**: Upload an image file (JPEG, PNG, etc.)
+    - **request_id**: Optional custom request ID (will be generated if not provided)
+    - **priority**: Processing priority from 1-10 (higher number = higher priority)
+    """
+    logger.info("/api/v1/image-to-txt-offline", image=image.filename, request_id=request_id)
+
+    # Validate file type
+    if not image.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
 
     # Generate request_id if not provided
     if request_id is None:
@@ -134,7 +153,15 @@ async def process_image(
 
 
 @app.get("/aihive-ocr/api/v1/status/{request_id}")
-async def get_status(request_id: str, db: Session = Depends(base.get_db)):
+async def get_status(
+        request_id: str,
+        db: Session = Depends(base.get_db)
+):
+    """
+    Get the status of an OCR processing request.
+
+    - **request_id**: The request ID returned from the process_image endpoint
+    """
     logger.info("/api/v1/status", request_id=request_id)
     task = crud.get_request(db=db, request_id=request_id)
     if not task:
