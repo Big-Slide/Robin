@@ -41,7 +41,7 @@ services:
     restart: always
     depends_on:
       - queue
-    image: robin-tts-engine:0.0.3
+    image: robin-tts-engine:0.0.4
     networks:
       robinnet: null
   backend:

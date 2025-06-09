@@ -34,7 +34,7 @@ async def process_message(
             )
             output_path = f"{output_dir}/{request_id}.wav"
             await tts_generator.do_tts(
-                text=text, model=model, tmp_path=output_path, lang=lang
+                text=text, model_id=model, tmp_path=output_path, lang=lang
             )
 
             result = {
