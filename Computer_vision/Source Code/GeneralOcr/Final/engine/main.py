@@ -10,7 +10,7 @@ from core.queue_utils import process_message
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
 else:
-    log_dir = "../../../../Outputs/GENERALOCR/result"
+    log_dir = "../../../../Outputs/ImageToTxt/result"
 os.makedirs(log_dir, exist_ok=True)
 
 # Configure logging
