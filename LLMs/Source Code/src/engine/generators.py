@@ -1,7 +1,7 @@
 from loguru import logger
 from config.config_handler import config
 from langchain_ollama import ChatOllama
-from typing import Union, Dict
+from typing import Union, Dict, Optional
 import PyPDF2
 from core.cv_generator import CVGenerator
 import json
@@ -12,6 +12,7 @@ import os
 import asyncio
 from core.prompt import PromptHandler
 import base64
+from pathlib import Path
 
 
 class LLMGenerator:
@@ -191,6 +192,97 @@ class LLMGenerator:
         with open(filepath, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
+    async def _get_file_type(self, filename: str) -> Optional[str]:
+        """
+        Asynchronously determine file type based on filename extension.
+
+        Args:
+            filename (str): The name of the file including extension
+
+        Returns:
+            Optional[str]: The file type category or None if unknown
+        """
+        # Use asyncio.sleep(0) to make it truly async and yield control
+        await asyncio.sleep(0)
+
+        # Extract file extension
+        extension = Path(filename).suffix.lower()
+
+        # File type mappings
+        file_types = {
+            # Images
+            ".jpg": "image",
+            ".jpeg": "image",
+            ".png": "image",
+            ".gif": "image",
+            ".bmp": "image",
+            ".svg": "image",
+            ".webp": "image",
+            ".ico": "image",
+            ".tiff": "image",
+            ".tif": "image",
+            # Documents
+            ".pdf": "pdf",
+            ".doc": "document",
+            ".docx": "document",
+            ".txt": "document",
+            ".rtf": "document",
+            ".odt": "document",
+            ".xls": "spreadsheet",
+            ".xlsx": "spreadsheet",
+            ".csv": "spreadsheet",
+            ".ppt": "presentation",
+            ".pptx": "presentation",
+            ".odp": "presentation",
+            # Audio
+            ".mp3": "audio",
+            ".wav": "audio",
+            ".flac": "audio",
+            ".aac": "audio",
+            ".ogg": "audio",
+            ".wma": "audio",
+            ".m4a": "audio",
+            # Video
+            ".mp4": "video",
+            ".avi": "video",
+            ".mkv": "video",
+            ".mov": "video",
+            ".wmv": "video",
+            ".flv": "video",
+            ".webm": "video",
+            ".m4v": "video",
+            # Archives
+            ".zip": "archive",
+            ".rar": "archive",
+            ".7z": "archive",
+            ".tar": "archive",
+            ".gz": "archive",
+            ".bz2": "archive",
+            ".xz": "archive",
+            # Code
+            ".py": "code",
+            ".js": "code",
+            ".html": "code",
+            ".css": "code",
+            ".java": "code",
+            ".cpp": "code",
+            ".c": "code",
+            ".php": "code",
+            ".rb": "code",
+            ".go": "code",
+            ".rs": "code",
+            ".ts": "code",
+            # Executables
+            ".exe": "executable",
+            ".msi": "executable",
+            ".deb": "executable",
+            ".rpm": "executable",
+            ".dmg": "executable",
+            ".app": "executable",
+        }
+
+        return file_types.get(extension, None)
+
     def _extract_json_from_response(self, response_text):
         """
         Extracts a JSON object from a text response.
@@ -350,6 +442,58 @@ class LLMGenerator:
             else:
                 raise ValueError(f"lang {lang} is not supported")
             logger.debug(f"{human_message=}")
+            messages = self.prompt_handler.get_messages(task, human_message)
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
+        elif task == "ocr":
+            if model is None:
+                self._set_model(config.MODEL_MULTIMODAL_ID)
+            filetype = await self._get_file_type(input1_path)
+            human_message = []
+            if filetype == "image":
+                with open(input1_path, "rb") as image_file:
+                    content = base64.b64encode(image_file.read()).decode("utf-8")
+                human_message.append(
+                    {
+                        "type": "image_url",
+                        "image_url": f"data:image/jpeg;base64,{content}",
+                    }
+                )
+                human_message.append(
+                    {
+                        "type": "text",
+                        "text": "Please extract all text from this image using OCR. The image may contain text in English, Persian, or Arabic. Return the results in the format that specified in your system instructions.",
+                    }
+                )
+            else:
+                raise ValueError("This filetype is not supported yet")
+            messages = self.prompt_handler.get_messages(task, human_message)
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
+        elif task == "ocr_json":
+            if model is None:
+                self._set_model(config.MODEL_MULTIMODAL_ID)
+            filetype = await self._get_file_type(input1_path)
+            human_message = []
+            if filetype == "image":
+                with open(input1_path, "rb") as image_file:
+                    content = base64.b64encode(image_file.read()).decode("utf-8")
+                human_message.append(
+                    {
+                        "type": "image_url",
+                        "image_url": f"data:image/jpeg;base64,{content}",
+                    }
+                )
+                human_message.append(
+                    {
+                        "type": "text",
+                        "text": "Please extract all text from this image using OCR. The image may contain text in English, Persian, or Arabic. Return the results in JSON format as specified in your system instructions.",
+                    }
+                )
+            else:
+                raise ValueError("This filetype is not supported yet")
             messages = self.prompt_handler.get_messages(task, human_message)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
