@@ -598,9 +598,7 @@ async def painting_analysis(
     return msg
 
 
-@app.post(
-    "/aihive-llm/api/v1/ocr/any-to-txt-offline", tags=["OCR"], include_in_schema=False
-)
+@app.post("/aihive-llm/api/v1/ocr/any-to-txt-offline", tags=["OCR"])
 async def ocr(
     file: UploadFile,
     request_id: str = None,

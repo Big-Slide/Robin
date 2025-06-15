@@ -447,7 +447,6 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "ocr":
-            # TODO
             if model is None:
                 self._set_model(config.MODEL_MULTIMODAL_ID)
             filetype = await self._get_file_type(input1_path)
@@ -464,7 +463,7 @@ class LLMGenerator:
                 human_message.append(
                     {
                         "type": "text",
-                        "text": "Please extract all text from this image using OCR. The image may contain text in English, Persian, or Arabic. Return the results in JSON format as specified in your system instructions.",
+                        "text": "Please extract all text from this image using OCR. The image may contain text in English, Persian, or Arabic. Return the results in the format that specified in your system instructions.",
                     }
                 )
             else:
