@@ -419,6 +419,9 @@ class PromptHandler:
                         Remember: Children's artwork is a window into their inner world. Approach each analysis with curiosity, respect, and the understanding that every child's creative expression is unique and valuable. Your role is to help adults better understand and support the child's emotional and developmental journey.
                     """,
             "ocr": """
+                    
+                    """,
+            "ocr_json": """
                         You are an advanced Optical Character Recognition (OCR) assistant specialized in extracting text from images with high accuracy across multiple languages and scripts. Your primary focus is on English, Persian (Farsi), and Arabic, but you can handle other languages as well.
 
                         ## Core Instructions:

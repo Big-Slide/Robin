@@ -447,6 +447,33 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "ocr":
+            # TODO
+            if model is None:
+                self._set_model(config.MODEL_MULTIMODAL_ID)
+            filetype = await self._get_file_type(input1_path)
+            human_message = []
+            if filetype == "image":
+                with open(input1_path, "rb") as image_file:
+                    content = base64.b64encode(image_file.read()).decode("utf-8")
+                human_message.append(
+                    {
+                        "type": "image_url",
+                        "image_url": f"data:image/jpeg;base64,{content}",
+                    }
+                )
+                human_message.append(
+                    {
+                        "type": "text",
+                        "text": "Please extract all text from this image using OCR. The image may contain text in English, Persian, or Arabic. Return the results in JSON format as specified in your system instructions.",
+                    }
+                )
+            else:
+                raise ValueError("This filetype is not supported yet")
+            messages = self.prompt_handler.get_messages(task, human_message)
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
+        elif task == "ocr_json":
             if model is None:
                 self._set_model(config.MODEL_MULTIMODAL_ID)
             filetype = await self._get_file_type(input1_path)
