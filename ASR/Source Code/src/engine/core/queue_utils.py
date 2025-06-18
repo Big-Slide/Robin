@@ -23,7 +23,18 @@ async def process_message(
                 input_path=input_path,
                 lang=lang,
             )
-            # TODO: mark task as in progress
+            # Mark task as in progress
+            result = {
+                "request_id": request_id,
+                "status": "in_progress",
+            }
+            await result_channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=json.dumps(result).encode(), headers={"request_id": request_id}
+                ),
+                routing_key="result_queue",
+            )
+
             text = await asr_generator.do_asr(input_path=input_path, lang=lang)
 
             result = {
