@@ -17,27 +17,36 @@ from pathlib import Path
 
 class LLMGenerator:
     def __init__(self):
-        self._current_model = None
+        self._current_state = {}
         self._set_model()
         self.prompt_handler = PromptHandler()
 
-    def _set_model(self, model: str = None):
-        if model is not None and model == self._current_model:
+    def _set_model(
+        self, model: str = None, num_predict: int = None, num_ctx: int = None
+    ):
+        model = model if model else config.MODEL_ID
+        num_predict = num_predict if num_predict else config.MODEL_NUM_PREDICT
+        num_ctx = num_ctx if num_ctx else config.MODEL_NUM_CTX
+        if (
+            model == self._current_state["model"]
+            and num_predict == self._current_state["num_predict"]
+            and num_ctx == self._current_state["num_ctx"]
+        ):
             return
-        if model:
-            id_model = model
-        else:
-            id_model = config.MODEL_ID
         self.llm = ChatOllama(
             base_url=config.CORE_BASE_URL,
-            model=id_model,
+            model=model,
             temperature=config.MODEL_TEMPERATURE,
             num_predict=config.MODEL_NUM_PREDICT,
             top_p=config.MODEL_TOP_P,
             num_ctx=config.MODEL_NUM_CTX,
         )
         self.cv_generator = CVGenerator(self.llm)
-        self._current_model = id_model
+        self._current_state = {
+            "model": model,
+            "num_predict": num_predict,
+            "num_ctx": num_ctx,
+        }
 
     async def _process_zip_pdfs(self, zip_path: str) -> Dict[str, str]:
         """
@@ -407,7 +416,7 @@ class LLMGenerator:
             return ai_msg.content, None
         elif task == "painting_analysis":
             if model is None:
-                self._set_model(config.MODEL_MULTIMODAL_ID)
+                self._set_model(model=config.MODEL_MULTIMODAL_ID)
             lang = input_params["lang"]
             results = await self._process_zip_images(input1_path)
             human_message = []
@@ -448,7 +457,7 @@ class LLMGenerator:
             return ai_msg.content, None
         elif task == "ocr":
             if model is None:
-                self._set_model(config.MODEL_MULTIMODAL_ID)
+                self._set_model(model=config.MODEL_MULTIMODAL_ID)
             filetype = await self._get_file_type(input1_path)
             human_message = []
             if filetype == "image":
@@ -474,7 +483,7 @@ class LLMGenerator:
             return ai_msg.content, None
         elif task == "ocr_json":
             if model is None:
-                self._set_model(config.MODEL_MULTIMODAL_ID)
+                self._set_model(model=config.MODEL_MULTIMODAL_ID)
             filetype = await self._get_file_type(input1_path)
             human_message = []
             if filetype == "image":
