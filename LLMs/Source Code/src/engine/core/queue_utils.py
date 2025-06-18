@@ -36,7 +36,15 @@ async def process_message(
                 input_params=input_params,
                 model=model,
             )
-            # TODO: mark task as in progress
+            # Mark task as in progress
+            result = {"request_id": request_id, "status": "in_progress"}
+            await result_channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=json.dumps(result).encode(), headers={"request_id": request_id}
+                ),
+                routing_key="result_queue",
+            )
+
             output_path = None
             if input_params:
                 output_path = f"{output_dir}/{request_id}.pdf"
