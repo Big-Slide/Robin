@@ -1,7 +1,7 @@
 from loguru import logger
 from config.config_handler import config
 from langchain_ollama import ChatOllama
-from typing import Union, Dict, Optional
+from typing import Union, Dict
 import PyPDF2
 from core.cv_generator import CVGenerator
 import json
@@ -12,7 +12,7 @@ import os
 import asyncio
 from core.prompt import PromptHandler
 import base64
-from pathlib import Path
+from core import utils
 
 
 class LLMGenerator:
@@ -165,7 +165,7 @@ class LLMGenerator:
             Tuple of (filename, content)
         """
         try:
-            content = await self._process_pdf(filepath)
+            content = await self._get_pdf_content(filepath)
             return filename, content
         except Exception as e:
             logger.error(f"Error processing {filename}: {e}")
@@ -183,13 +183,13 @@ class LLMGenerator:
             Tuple of (filename, content)
         """
         try:
-            content = await self._process_image(filepath)
+            content = await self._img_to_b64(filepath)
             return filename, content
         except Exception as e:
             logger.error(f"Error processing {filename}: {e}")
             return filename, ""
 
-    async def _process_pdf(self, filepath: str) -> str:
+    async def _get_pdf_content(self, filepath: str) -> str:
         pdf_content = ""
         with open(filepath, "rb") as file:
             pdf_reader = PyPDF2.PdfReader(file)
@@ -197,100 +197,9 @@ class LLMGenerator:
                 pdf_content += page.extract_text() + "\n"
         return pdf_content
 
-    async def _process_image(self, filepath: str) -> str:
+    async def _img_to_b64(self, filepath: str) -> str:
         with open(filepath, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
-
-    async def _get_file_type(self, filename: str) -> Optional[str]:
-        """
-        Asynchronously determine file type based on filename extension.
-
-        Args:
-            filename (str): The name of the file including extension
-
-        Returns:
-            Optional[str]: The file type category or None if unknown
-        """
-        # Use asyncio.sleep(0) to make it truly async and yield control
-        await asyncio.sleep(0)
-
-        # Extract file extension
-        extension = Path(filename).suffix.lower()
-
-        # File type mappings
-        file_types = {
-            # Images
-            ".jpg": "image",
-            ".jpeg": "image",
-            ".png": "image",
-            ".gif": "image",
-            ".bmp": "image",
-            ".svg": "image",
-            ".webp": "image",
-            ".ico": "image",
-            ".tiff": "image",
-            ".tif": "image",
-            # Documents
-            ".pdf": "pdf",
-            ".doc": "document",
-            ".docx": "document",
-            ".txt": "document",
-            ".rtf": "document",
-            ".odt": "document",
-            ".xls": "spreadsheet",
-            ".xlsx": "spreadsheet",
-            ".csv": "spreadsheet",
-            ".ppt": "presentation",
-            ".pptx": "presentation",
-            ".odp": "presentation",
-            # Audio
-            ".mp3": "audio",
-            ".wav": "audio",
-            ".flac": "audio",
-            ".aac": "audio",
-            ".ogg": "audio",
-            ".wma": "audio",
-            ".m4a": "audio",
-            # Video
-            ".mp4": "video",
-            ".avi": "video",
-            ".mkv": "video",
-            ".mov": "video",
-            ".wmv": "video",
-            ".flv": "video",
-            ".webm": "video",
-            ".m4v": "video",
-            # Archives
-            ".zip": "archive",
-            ".rar": "archive",
-            ".7z": "archive",
-            ".tar": "archive",
-            ".gz": "archive",
-            ".bz2": "archive",
-            ".xz": "archive",
-            # Code
-            ".py": "code",
-            ".js": "code",
-            ".html": "code",
-            ".css": "code",
-            ".java": "code",
-            ".cpp": "code",
-            ".c": "code",
-            ".php": "code",
-            ".rb": "code",
-            ".go": "code",
-            ".rs": "code",
-            ".ts": "code",
-            # Executables
-            ".exe": "executable",
-            ".msi": "executable",
-            ".deb": "executable",
-            ".rpm": "executable",
-            ".dmg": "executable",
-            ".app": "executable",
-        }
-
-        return file_types.get(extension, None)
 
     def _extract_json_from_response(self, response_text):
         """
@@ -325,7 +234,7 @@ class LLMGenerator:
         )
         self._set_model(model=model)
         if task == "hr_pdf_analysis":
-            pdf_text = await self._process_pdf(input1_path)
+            pdf_text = await self._get_pdf_content(input1_path)
             messages = self.prompt_handler.get_messages(task, pdf_text)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
@@ -338,14 +247,14 @@ class LLMGenerator:
                 resp = ai_msg.content
             return resp, None
         elif task == "pdf_analysis":
-            pdf_text = await self._process_pdf(input1_path)
+            pdf_text = await self._get_pdf_content(input1_path)
             messages = self.prompt_handler.get_messages(task, pdf_text)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "hr_pdf_comparison":
-            pdf_text1 = await self._process_pdf(input1_path)
-            pdf_text2 = await self._process_pdf(input2_path)
+            pdf_text1 = await self._get_pdf_content(input1_path)
+            pdf_text2 = await self._get_pdf_content(input2_path)
             messages = self.prompt_handler.get_messages(
                 task, f"CV 1:\n{pdf_text1}\n\CV 2:\n{pdf_text2}"
             )
@@ -458,11 +367,10 @@ class LLMGenerator:
         elif task == "ocr":
             if model is None:
                 self._set_model(model=config.MODEL_MULTIMODAL_ID)
-            filetype = await self._get_file_type(input1_path)
+            filetype = utils.get_file_type(input1_path)
             human_message = []
             if filetype == "image":
-                with open(input1_path, "rb") as image_file:
-                    content = base64.b64encode(image_file.read()).decode("utf-8")
+                content = await self._img_to_b64(input1_path)
                 human_message.append(
                     {
                         "type": "image_url",
@@ -484,11 +392,10 @@ class LLMGenerator:
         elif task == "ocr_json":
             if model is None:
                 self._set_model(model=config.MODEL_MULTIMODAL_ID)
-            filetype = await self._get_file_type(input1_path)
+            filetype = utils.get_file_type(input1_path)
             human_message = []
             if filetype == "image":
-                with open(input1_path, "rb") as image_file:
-                    content = base64.b64encode(image_file.read()).decode("utf-8")
+                content = await self._img_to_b64(input1_path)
                 human_message.append(
                     {
                         "type": "image_url",
