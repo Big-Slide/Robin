@@ -1,5 +1,11 @@
 from pathlib import Path
 from typing import Optional
+import os
+
+
+def delete_file(filepath: str):
+    if os.path.exists(filepath):
+        os.remove(filepath)
 
 
 def get_file_type(filename: str) -> Optional[str]:
