@@ -2,16 +2,12 @@ from loguru import logger
 from config.config_handler import config
 from langchain_ollama import ChatOllama
 from typing import Union, Dict
-import PyPDF2
 from core.cv_generator import CVGenerator
-import json
-import re
 import zipfile
 import tempfile
 import os
 import asyncio
 from core.prompt import PromptHandler
-import base64
 from core import utils
 
 
@@ -103,47 +99,16 @@ class LLMGenerator:
         try:
             filetype = utils.get_file_type(filename)
             if filetype == "pdf":
-                content = await self._get_pdf_content(filepath)
+                content = await utils.get_pdf_content(filepath)
             elif filetype == "image":
-                content = await self._img_to_b64(filepath)
+                content = await utils.img_to_b64(filepath)
             else:
-                logger.error(f"Unknown filetype: {filetype}")
+                logger.warning(f"The {filetype} filetype is not supported. {filename=}")
                 content = ""
             return filename, content
         except Exception as e:
             logger.error(f"Error processing {filename}: {e}")
             return filename, ""
-
-    async def _get_pdf_content(self, filepath: str) -> str:
-        pdf_content = ""
-        with open(filepath, "rb") as file:
-            pdf_reader = PyPDF2.PdfReader(file)
-            for page in pdf_reader.pages:
-                pdf_content += page.extract_text() + "\n"
-        return pdf_content
-
-    async def _img_to_b64(self, filepath: str) -> str:
-        with open(filepath, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode("utf-8")
-
-    def _extract_json_from_response(self, response_text):
-        """
-        Extracts a JSON object from a text response.
-        Assumes the JSON is enclosed in curly braces {} or a code block.
-        """
-        try:
-            # Try to directly parse if the whole response is JSON
-            return json.dumps(json.loads(response_text), separators=(",", ":"))
-        except json.JSONDecodeError:
-            # Fallback: Extract the first JSON-like block from the text
-            json_match = re.search(r"\{[\s\S]*\}", response_text)
-            if json_match:
-                json_str = json_match.group()
-                try:
-                    return json.dumps(json.loads(json_str), separators=(",", ":"))
-                except json.JSONDecodeError as e:
-                    raise ValueError("Found JSON block but could not parse it.") from e
-            raise ValueError("No JSON object found in the response.")
 
     async def process_task(
         self,
@@ -159,12 +124,12 @@ class LLMGenerator:
         )
         self._set_model(task=task, model=model)
         if task == "hr_pdf_analysis":
-            pdf_text = await self._get_pdf_content(input1_path)
+            pdf_text = await utils.get_pdf_content(input1_path)
             messages = self.prompt_handler.get_messages(task, pdf_text)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             try:
-                resp = self._extract_json_from_response(ai_msg.content)
+                resp = utils.extract_json_from_response(ai_msg.content)
             except Exception as e:
                 logger.opt(exception=False).warning(
                     "Failed to parse response to json", e=e.args
@@ -172,14 +137,14 @@ class LLMGenerator:
                 resp = ai_msg.content
             return resp, None
         elif task == "pdf_analysis":
-            pdf_text = await self._get_pdf_content(input1_path)
+            pdf_text = await utils.get_pdf_content(input1_path)
             messages = self.prompt_handler.get_messages(task, pdf_text)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "hr_pdf_comparison":
-            pdf_text1 = await self._get_pdf_content(input1_path)
-            pdf_text2 = await self._get_pdf_content(input2_path)
+            pdf_text1 = await utils.get_pdf_content(input1_path)
+            pdf_text2 = await utils.get_pdf_content(input2_path)
             messages = self.prompt_handler.get_messages(
                 task, f"CV 1:\n{pdf_text1}\n\CV 2:\n{pdf_text2}"
             )
@@ -226,7 +191,7 @@ class LLMGenerator:
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             try:
-                resp = self._extract_json_from_response(ai_msg.content)
+                resp = utils.extract_json_from_response(ai_msg.content)
             except Exception as e:
                 logger.opt(exception=False).warning(
                     "Failed to parse response to json", e=e.args
@@ -243,12 +208,15 @@ class LLMGenerator:
             self.cv_generator.create_pdf_cv(cv_content, output_path)
             return None, output_path
         elif task == "chat":
+            # TODO: handle single image
+            # TODO: handle pdf
             prompt = input_params["prompt"]
             messages = self.prompt_handler.get_messages(task, prompt)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "painting_analysis":
+            # TODO: handle single image
             lang = input_params["lang"]
             results = await self._process_zip_file(input1_path, "image")
             human_message = []
@@ -291,7 +259,7 @@ class LLMGenerator:
             filetype = utils.get_file_type(input1_path)
             human_message = []
             if filetype == "image":
-                content = await self._img_to_b64(input1_path)
+                content = await utils.img_to_b64(input1_path)
                 human_message.append(
                     {
                         "type": "image_url",
@@ -314,7 +282,7 @@ class LLMGenerator:
             filetype = utils.get_file_type(input1_path)
             human_message = []
             if filetype == "image":
-                content = await self._img_to_b64(input1_path)
+                content = await utils.img_to_b64(input1_path)
                 human_message.append(
                     {
                         "type": "image_url",

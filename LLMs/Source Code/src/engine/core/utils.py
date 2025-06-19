@@ -1,11 +1,44 @@
 from pathlib import Path
 from typing import Optional
 import os
+import json
+import re
+import base64
+import PyPDF2
 
 
-def delete_file(filepath: str):
-    if os.path.exists(filepath):
-        os.remove(filepath)
+async def get_pdf_content(filepath: str) -> str:
+    pdf_content = ""
+    with open(filepath, "rb") as file:
+        pdf_reader = PyPDF2.PdfReader(file)
+        for page in pdf_reader.pages:
+            pdf_content += page.extract_text() + "\n"
+    return pdf_content
+
+
+async def img_to_b64(filepath: str) -> str:
+    with open(filepath, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+
+def extract_json_from_response(response_text: str):
+    """
+    Extracts a JSON object from a text response.
+    Assumes the JSON is enclosed in curly braces {} or a code block.
+    """
+    try:
+        # Try to directly parse if the whole response is JSON
+        return json.dumps(json.loads(response_text), separators=(",", ":"))
+    except json.JSONDecodeError:
+        # Fallback: Extract the first JSON-like block from the text
+        json_match = re.search(r"\{[\s\S]*\}", response_text)
+        if json_match:
+            json_str = json_match.group()
+            try:
+                return json.dumps(json.loads(json_str), separators=(",", ":"))
+            except json.JSONDecodeError as e:
+                raise ValueError("Found JSON block but could not parse it.") from e
+        raise ValueError("No JSON object found in the response.")
 
 
 def get_file_type(filename: str) -> Optional[str]:
@@ -96,3 +129,8 @@ def get_file_type(filename: str) -> Optional[str]:
     }
 
     return file_types.get(extension, None)
+
+
+def delete_file(filepath: str):
+    if os.path.exists(filepath):
+        os.remove(filepath)
