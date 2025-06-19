@@ -48,142 +48,69 @@ class LLMGenerator:
             "num_ctx": num_ctx,
         }
 
-    async def _process_zip_pdfs(self, zip_path: str) -> Dict[str, str]:
+    async def _process_zip_file(self, zip_path: str, files_type: str) -> Dict[str, str]:
         """
-        Extract and process all PDF files from a ZIP archive.
+        Extract and process all files from a ZIP archive.
 
         Args:
             zip_path: Path to the ZIP file
 
         Returns:
-            Dictionary mapping PDF filenames to their extracted text content
+            Dictionary mapping filenames to their extracted text content
         """
-        pdf_contents = {}
+        contents = {}
+        files = []
 
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             # Get list of PDF files in the ZIP
-            pdf_files = [
-                f
-                for f in zip_ref.namelist()
-                if f.lower().endswith(".pdf") and not f.startswith("__MACOSX/")
-            ]
-
-            if not pdf_files:
-                return pdf_contents
-
-            # Create temporary directory for extraction
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # Extract only PDF files
-                for pdf_file in pdf_files:
-                    zip_ref.extract(pdf_file, temp_dir)
-
-                # Process each PDF file
-                tasks = []
-                for pdf_file in pdf_files:
-                    temp_pdf_path = os.path.join(temp_dir, pdf_file)
-                    if os.path.exists(temp_pdf_path):
-                        tasks.append(self.__process_single_pdf(pdf_file, temp_pdf_path))
-
-                # Process all PDFs concurrently
-                if tasks:
-                    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-                    for result in results:
-                        if isinstance(result, tuple) and len(result) == 2:
-                            filename, content = result
-                            pdf_contents[filename] = content
-                        elif isinstance(result, Exception):
-                            logger.error(f"Error processing PDF: {result}")
-
-        return pdf_contents
-
-    async def _process_zip_images(self, zip_path: str) -> Dict[str, str]:
-        """
-        Extract and process all PDF files from a ZIP archive.
-
-        Args:
-            zip_path: Path to the ZIP file
-
-        Returns:
-            Dictionary mapping Image filenames to their base64 encoded text content
-        """
-        images_encoded = {}
-
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            # Get list of Image files in the ZIP
-            image_files = [
-                f
-                for f in zip_ref.namelist()
+            for f in zip_ref.namelist():
                 if (
-                    f.lower().endswith(".jpg")
-                    or f.lower().endswith(".jpeg")
-                    or f.lower().endswith(".png")
-                )
-                and not f.startswith("__MACOSX/")
-            ]
+                    not f.startswith("__MACOSX/")
+                    and utils.get_file_type(f) == files_type
+                ):
+                    files.append(f)
 
-            if not image_files:
-                return images_encoded
+            if not files:
+                return contents
 
             # Create temporary directory for extraction
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Extract only PDF files
-                for image_file in image_files:
-                    zip_ref.extract(image_file, temp_dir)
+                for f in files:
+                    zip_ref.extract(f, temp_dir)
 
-                # Process each Image file
+                # Process each file
                 tasks = []
-                for image_file in image_files:
-                    temp_image_path = os.path.join(temp_dir, image_file)
-                    if os.path.exists(temp_image_path):
-                        tasks.append(
-                            self.__process_single_image(image_file, temp_image_path)
-                        )
+                for f in files:
+                    temp_file_path = os.path.join(temp_dir, f)
+                    if os.path.exists(temp_file_path):
+                        tasks.append(self.__process_single_file(f, temp_file_path))
 
-                # Process all Images concurrently
+                # Process all files concurrently
                 if tasks:
                     results = await asyncio.gather(*tasks, return_exceptions=True)
 
                     for result in results:
                         if isinstance(result, tuple) and len(result) == 2:
                             filename, content = result
-                            images_encoded[filename] = content
+                            contents[filename] = content
                         elif isinstance(result, Exception):
-                            logger.error(f"Error processing Image: {result}")
+                            logger.error(
+                                f"Error processing file ({filename}): {result}"
+                            )
 
-        return images_encoded
+        return contents
 
-    async def __process_single_pdf(self, filename: str, filepath: str) -> tuple:
-        """
-        Process a single PDF file and return filename with content.
-
-        Args:
-            filename: Original filename in the ZIP
-            filepath: Temporary file path
-
-        Returns:
-            Tuple of (filename, content)
-        """
+    async def __process_single_file(self, filename: str, filepath: str) -> tuple:
         try:
-            content = await self._get_pdf_content(filepath)
-            return filename, content
-        except Exception as e:
-            logger.error(f"Error processing {filename}: {e}")
-            return filename, ""
-
-    async def __process_single_image(self, filename: str, filepath: str) -> tuple:
-        """
-        Process a single PDF file and return filename with content.
-
-        Args:
-            filename: Original filename in the ZIP
-            filepath: Temporary file path
-
-        Returns:
-            Tuple of (filename, content)
-        """
-        try:
-            content = await self._img_to_b64(filepath)
+            filetype = utils.get_file_type(filename)
+            if filetype == "pdf":
+                content = await self._get_pdf_content(filepath)
+            elif filetype == "image":
+                content = await self._img_to_b64(filepath)
+            else:
+                logger.error(f"Unknown filetype: {filetype}")
+                content = ""
             return filename, content
         except Exception as e:
             logger.error(f"Error processing {filename}: {e}")
@@ -262,7 +189,7 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "hr_pdf_zip_comparison":
-            results = await self._process_zip_pdfs(input1_path)
+            results = await self._process_zip_file(input1_path, "pdf")
 
             human_message = ""
             c = 1
@@ -278,7 +205,7 @@ class LLMGenerator:
         elif task == "hr_pdf_zip_compare_and_match":
             job_description = input_params["job_description"]
 
-            results = await self._process_zip_pdfs(input1_path)
+            results = await self._process_zip_file(input1_path, "pdf")
             human_message = ""
             c = 1
             for filename, content in results.items():
@@ -327,7 +254,7 @@ class LLMGenerator:
             if model is None:
                 self._set_model(model=config.MODEL_MULTIMODAL_ID)
             lang = input_params["lang"]
-            results = await self._process_zip_images(input1_path)
+            results = await self._process_zip_file(input1_path, "image")
             human_message = []
             for filename, content in results.items():
                 human_message.append(
