@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Dict
+from config.config_handler import config
 
 
 class PromptHandler:
@@ -547,14 +548,77 @@ class PromptHandler:
                     """,
         }
 
-    def get_prompt(self, id_task: str) -> str:
+        self._task_model_params = {
+            "hr_pdf_analysis": {
+                "model": config.MODEL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "pdf_analysis": {
+                "model": config.MODEL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "hr_pdf_comparison": {
+                "model": config.MODEL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "hr_pdf_zip_comparison": {
+                "model": config.MODEL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "hr_pdf_zip_compare_and_match": {
+                "model": config.MODEL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "hr_analysis_question": {
+                "model": config.MODEL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "cv_generate": {
+                "model": config.MODEL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "chat": {
+                "model": config.MODEL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "painting_analysis": {
+                "model": config.MODEL_MULTIMODAL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "ocr": {
+                "model": config.MODEL_MULTIMODAL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+            "ocr_json": {
+                "model": config.MODEL_MULTIMODAL_ID,
+                "num_predict": config.MODEL_NUM_PREDICT,
+                "num_ctx": config.MODEL_NUM_CTX,
+            },
+        }
+
+    def get_model_params(self, task: str) -> Dict:
+        if task not in self._task_model_params.keys():
+            raise ValueError(f"Task {task} is not supported")
+        return self._task_model_params[task]
+
+    def _get_prompt(self, id_task: str) -> str:
         return self._prompts[id_task]
 
     def get_messages(self, id_task: str, human_message: str | List) -> List:
         return [
             (
                 "system",
-                self.get_prompt(id_task),
+                self._get_prompt(id_task),
             ),
             ("human", human_message),
         ]

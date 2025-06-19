@@ -45,6 +45,7 @@ async def process_message(
                 routing_key="result_queue",
             )
 
+            # TODO: handle this based on new added tasks
             output_path = None
             if input_params:
                 output_path = f"{output_dir}/{request_id}.pdf"

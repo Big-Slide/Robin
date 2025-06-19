@@ -18,28 +18,28 @@ from core import utils
 class LLMGenerator:
     def __init__(self):
         self._current_state = {}
-        self._set_model()
         self.prompt_handler = PromptHandler()
+        self._set_model("chat")
 
-    def _set_model(
-        self, model: str = None, num_predict: int = None, num_ctx: int = None
-    ):
-        model = model if model else config.MODEL_ID
-        num_predict = num_predict if num_predict else config.MODEL_NUM_PREDICT
-        num_ctx = num_ctx if num_ctx else config.MODEL_NUM_CTX
+    def _set_model(self, task: str, model: str = None):
+        params = self.prompt_handler.get_model_params(task)
+        if model is None:
+            model = params["model"]
+        num_predict = params["num_predict"]
+        num_ctx = params["num_ctx"]
         if (
-            model == self._current_state["model"]
-            and num_predict == self._current_state["num_predict"]
-            and num_ctx == self._current_state["num_ctx"]
+            model == self._current_state.get("model", None)
+            and num_predict == self._current_state.get("num_predict", None)
+            and num_ctx == self._current_state.get("num_ctx", None)
         ):
             return
         self.llm = ChatOllama(
             base_url=config.CORE_BASE_URL,
             model=model,
             temperature=config.MODEL_TEMPERATURE,
-            num_predict=config.MODEL_NUM_PREDICT,
+            num_predict=num_predict,
             top_p=config.MODEL_TOP_P,
-            num_ctx=config.MODEL_NUM_CTX,
+            num_ctx=num_ctx,
         )
         self.cv_generator = CVGenerator(self.llm)
         self._current_state = {
@@ -62,24 +62,23 @@ class LLMGenerator:
         files = []
 
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            # Get list of PDF files in the ZIP
+            # Get list of files with type [files_type] from the ZIP
             for f in zip_ref.namelist():
                 if (
                     not f.startswith("__MACOSX/")
                     and utils.get_file_type(f) == files_type
                 ):
                     files.append(f)
-
             if not files:
                 return contents
 
             # Create temporary directory for extraction
             with tempfile.TemporaryDirectory() as temp_dir:
-                # Extract only PDF files
+                # Extract only specified files
                 for f in files:
                     zip_ref.extract(f, temp_dir)
 
-                # Process each file
+                # Create each file processing task
                 tasks = []
                 for f in files:
                     temp_file_path = os.path.join(temp_dir, f)
@@ -98,7 +97,6 @@ class LLMGenerator:
                             logger.error(
                                 f"Error processing file ({filename}): {result}"
                             )
-
         return contents
 
     async def __process_single_file(self, filename: str, filepath: str) -> tuple:
@@ -159,7 +157,7 @@ class LLMGenerator:
         logger.debug(
             f"{task=}, {input_params=}, {input1_path=}, {input2_path=}, {output_path=}, {model=}"
         )
-        self._set_model(model=model)
+        self._set_model(task=task, model=model)
         if task == "hr_pdf_analysis":
             pdf_text = await self._get_pdf_content(input1_path)
             messages = self.prompt_handler.get_messages(task, pdf_text)
@@ -251,8 +249,6 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "painting_analysis":
-            if model is None:
-                self._set_model(model=config.MODEL_MULTIMODAL_ID)
             lang = input_params["lang"]
             results = await self._process_zip_file(input1_path, "image")
             human_message = []
@@ -292,8 +288,6 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "ocr":
-            if model is None:
-                self._set_model(model=config.MODEL_MULTIMODAL_ID)
             filetype = utils.get_file_type(input1_path)
             human_message = []
             if filetype == "image":
@@ -317,8 +311,6 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "ocr_json":
-            if model is None:
-                self._set_model(model=config.MODEL_MULTIMODAL_ID)
             filetype = utils.get_file_type(input1_path)
             human_message = []
             if filetype == "image":
@@ -342,4 +334,4 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         else:
-            raise ValueError(f"task {task} is not supported")
+            raise ValueError(f"Task {task} is not supported")
