@@ -1,306 +1,114 @@
 from loguru import logger
 from config.config_handler import config
 from langchain_ollama import ChatOllama
-from typing import Union, Dict, Optional
-import PyPDF2
+from typing import Union, Dict
 from core.cv_generator import CVGenerator
-import json
-import re
 import zipfile
 import tempfile
 import os
 import asyncio
 from core.prompt import PromptHandler
-import base64
-from pathlib import Path
+from core import utils
 
 
 class LLMGenerator:
     def __init__(self):
-        self._current_model = None
-        self._set_model()
+        self._current_state = {}
         self.prompt_handler = PromptHandler()
+        self._set_model("chat")
 
-    def _set_model(self, model: str = None):
-        if model is not None and model == self._current_model:
+    def _set_model(self, task: str, model: str = None):
+        params = self.prompt_handler.get_model_params(task)
+        if model is None:
+            model = params["model"]
+        num_predict = params["num_predict"]
+        num_ctx = params["num_ctx"]
+        if (
+            model == self._current_state.get("model", None)
+            and num_predict == self._current_state.get("num_predict", None)
+            and num_ctx == self._current_state.get("num_ctx", None)
+        ):
             return
-        if model:
-            id_model = model
-        else:
-            id_model = config.MODEL_ID
         self.llm = ChatOllama(
             base_url=config.CORE_BASE_URL,
-            model=id_model,
+            model=model,
             temperature=config.MODEL_TEMPERATURE,
-            num_predict=config.MODEL_NUM_PREDICT,
+            num_predict=num_predict,
             top_p=config.MODEL_TOP_P,
-            num_ctx=config.MODEL_NUM_CTX,
+            num_ctx=num_ctx,
         )
         self.cv_generator = CVGenerator(self.llm)
-        self._current_model = id_model
-
-    async def _process_zip_pdfs(self, zip_path: str) -> Dict[str, str]:
-        """
-        Extract and process all PDF files from a ZIP archive.
-
-        Args:
-            zip_path: Path to the ZIP file
-
-        Returns:
-            Dictionary mapping PDF filenames to their extracted text content
-        """
-        pdf_contents = {}
-
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            # Get list of PDF files in the ZIP
-            pdf_files = [
-                f
-                for f in zip_ref.namelist()
-                if f.lower().endswith(".pdf") and not f.startswith("__MACOSX/")
-            ]
-
-            if not pdf_files:
-                return pdf_contents
-
-            # Create temporary directory for extraction
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # Extract only PDF files
-                for pdf_file in pdf_files:
-                    zip_ref.extract(pdf_file, temp_dir)
-
-                # Process each PDF file
-                tasks = []
-                for pdf_file in pdf_files:
-                    temp_pdf_path = os.path.join(temp_dir, pdf_file)
-                    if os.path.exists(temp_pdf_path):
-                        tasks.append(self.__process_single_pdf(pdf_file, temp_pdf_path))
-
-                # Process all PDFs concurrently
-                if tasks:
-                    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-                    for result in results:
-                        if isinstance(result, tuple) and len(result) == 2:
-                            filename, content = result
-                            pdf_contents[filename] = content
-                        elif isinstance(result, Exception):
-                            logger.error(f"Error processing PDF: {result}")
-
-        return pdf_contents
-
-    async def _process_zip_images(self, zip_path: str) -> Dict[str, str]:
-        """
-        Extract and process all PDF files from a ZIP archive.
-
-        Args:
-            zip_path: Path to the ZIP file
-
-        Returns:
-            Dictionary mapping Image filenames to their base64 encoded text content
-        """
-        images_encoded = {}
-
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            # Get list of Image files in the ZIP
-            image_files = [
-                f
-                for f in zip_ref.namelist()
-                if (
-                    f.lower().endswith(".jpg")
-                    or f.lower().endswith(".jpeg")
-                    or f.lower().endswith(".png")
-                )
-                and not f.startswith("__MACOSX/")
-            ]
-
-            if not image_files:
-                return images_encoded
-
-            # Create temporary directory for extraction
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # Extract only PDF files
-                for image_file in image_files:
-                    zip_ref.extract(image_file, temp_dir)
-
-                # Process each Image file
-                tasks = []
-                for image_file in image_files:
-                    temp_image_path = os.path.join(temp_dir, image_file)
-                    if os.path.exists(temp_image_path):
-                        tasks.append(
-                            self.__process_single_image(image_file, temp_image_path)
-                        )
-
-                # Process all Images concurrently
-                if tasks:
-                    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-                    for result in results:
-                        if isinstance(result, tuple) and len(result) == 2:
-                            filename, content = result
-                            images_encoded[filename] = content
-                        elif isinstance(result, Exception):
-                            logger.error(f"Error processing Image: {result}")
-
-        return images_encoded
-
-    async def __process_single_pdf(self, filename: str, filepath: str) -> tuple:
-        """
-        Process a single PDF file and return filename with content.
-
-        Args:
-            filename: Original filename in the ZIP
-            filepath: Temporary file path
-
-        Returns:
-            Tuple of (filename, content)
-        """
-        try:
-            content = await self._process_pdf(filepath)
-            return filename, content
-        except Exception as e:
-            logger.error(f"Error processing {filename}: {e}")
-            return filename, ""
-
-    async def __process_single_image(self, filename: str, filepath: str) -> tuple:
-        """
-        Process a single PDF file and return filename with content.
-
-        Args:
-            filename: Original filename in the ZIP
-            filepath: Temporary file path
-
-        Returns:
-            Tuple of (filename, content)
-        """
-        try:
-            content = await self._process_image(filepath)
-            return filename, content
-        except Exception as e:
-            logger.error(f"Error processing {filename}: {e}")
-            return filename, ""
-
-    async def _process_pdf(self, filepath: str) -> str:
-        pdf_content = ""
-        with open(filepath, "rb") as file:
-            pdf_reader = PyPDF2.PdfReader(file)
-            for page in pdf_reader.pages:
-                pdf_content += page.extract_text() + "\n"
-        return pdf_content
-
-    async def _process_image(self, filepath: str) -> str:
-        with open(filepath, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode("utf-8")
-
-    async def _get_file_type(self, filename: str) -> Optional[str]:
-        """
-        Asynchronously determine file type based on filename extension.
-
-        Args:
-            filename (str): The name of the file including extension
-
-        Returns:
-            Optional[str]: The file type category or None if unknown
-        """
-        # Use asyncio.sleep(0) to make it truly async and yield control
-        await asyncio.sleep(0)
-
-        # Extract file extension
-        extension = Path(filename).suffix.lower()
-
-        # File type mappings
-        file_types = {
-            # Images
-            ".jpg": "image",
-            ".jpeg": "image",
-            ".png": "image",
-            ".gif": "image",
-            ".bmp": "image",
-            ".svg": "image",
-            ".webp": "image",
-            ".ico": "image",
-            ".tiff": "image",
-            ".tif": "image",
-            # Documents
-            ".pdf": "pdf",
-            ".doc": "document",
-            ".docx": "document",
-            ".txt": "document",
-            ".rtf": "document",
-            ".odt": "document",
-            ".xls": "spreadsheet",
-            ".xlsx": "spreadsheet",
-            ".csv": "spreadsheet",
-            ".ppt": "presentation",
-            ".pptx": "presentation",
-            ".odp": "presentation",
-            # Audio
-            ".mp3": "audio",
-            ".wav": "audio",
-            ".flac": "audio",
-            ".aac": "audio",
-            ".ogg": "audio",
-            ".wma": "audio",
-            ".m4a": "audio",
-            # Video
-            ".mp4": "video",
-            ".avi": "video",
-            ".mkv": "video",
-            ".mov": "video",
-            ".wmv": "video",
-            ".flv": "video",
-            ".webm": "video",
-            ".m4v": "video",
-            # Archives
-            ".zip": "archive",
-            ".rar": "archive",
-            ".7z": "archive",
-            ".tar": "archive",
-            ".gz": "archive",
-            ".bz2": "archive",
-            ".xz": "archive",
-            # Code
-            ".py": "code",
-            ".js": "code",
-            ".html": "code",
-            ".css": "code",
-            ".java": "code",
-            ".cpp": "code",
-            ".c": "code",
-            ".php": "code",
-            ".rb": "code",
-            ".go": "code",
-            ".rs": "code",
-            ".ts": "code",
-            # Executables
-            ".exe": "executable",
-            ".msi": "executable",
-            ".deb": "executable",
-            ".rpm": "executable",
-            ".dmg": "executable",
-            ".app": "executable",
+        self._current_state = {
+            "model": model,
+            "num_predict": num_predict,
+            "num_ctx": num_ctx,
         }
 
-        return file_types.get(extension, None)
+    async def _process_zip_file(self, zip_path: str, files_type: str) -> Dict[str, str]:
+        """
+        Extract and process all files from a ZIP archive.
 
-    def _extract_json_from_response(self, response_text):
+        Args:
+            zip_path: Path to the ZIP file
+
+        Returns:
+            Dictionary mapping filenames to their extracted text content
         """
-        Extracts a JSON object from a text response.
-        Assumes the JSON is enclosed in curly braces {} or a code block.
-        """
+        contents = {}
+        files = []
+
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            # Get list of files with type [files_type] from the ZIP
+            for f in zip_ref.namelist():
+                if (
+                    not f.startswith("__MACOSX/")
+                    and utils.get_file_type(f) == files_type
+                ):
+                    files.append(f)
+            if not files:
+                return contents
+
+            # Create temporary directory for extraction
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Extract only specified files
+                for f in files:
+                    zip_ref.extract(f, temp_dir)
+
+                # Create each file processing task
+                tasks = []
+                for f in files:
+                    temp_file_path = os.path.join(temp_dir, f)
+                    if os.path.exists(temp_file_path):
+                        tasks.append(self.__process_single_file(f, temp_file_path))
+
+                # Process all files concurrently
+                if tasks:
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                    for result in results:
+                        if isinstance(result, tuple) and len(result) == 2:
+                            filename, content = result
+                            contents[filename] = content
+                        elif isinstance(result, Exception):
+                            logger.error(
+                                f"Error processing file ({filename}): {result}"
+                            )
+        return contents
+
+    async def __process_single_file(self, filename: str, filepath: str) -> tuple:
         try:
-            # Try to directly parse if the whole response is JSON
-            return json.dumps(json.loads(response_text), separators=(",", ":"))
-        except json.JSONDecodeError:
-            # Fallback: Extract the first JSON-like block from the text
-            json_match = re.search(r"\{[\s\S]*\}", response_text)
-            if json_match:
-                json_str = json_match.group()
-                try:
-                    return json.dumps(json.loads(json_str), separators=(",", ":"))
-                except json.JSONDecodeError as e:
-                    raise ValueError("Found JSON block but could not parse it.") from e
-            raise ValueError("No JSON object found in the response.")
+            filetype = utils.get_file_type(filename)
+            if filetype == "pdf":
+                content = await utils.get_pdf_content(filepath)
+            elif filetype == "image":
+                content = await utils.img_to_b64(filepath)
+            else:
+                logger.warning(f"The {filetype} filetype is not supported. {filename=}")
+                content = ""
+            return filename, content
+        except Exception as e:
+            logger.error(f"Error processing {filename}: {e}")
+            return filename, ""
 
     async def process_task(
         self,
@@ -314,14 +122,14 @@ class LLMGenerator:
         logger.debug(
             f"{task=}, {input_params=}, {input1_path=}, {input2_path=}, {output_path=}, {model=}"
         )
-        self._set_model(model=model)
+        self._set_model(task=task, model=model)
         if task == "hr_pdf_analysis":
-            pdf_text = await self._process_pdf(input1_path)
+            pdf_text = await utils.get_pdf_content(input1_path)
             messages = self.prompt_handler.get_messages(task, pdf_text)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             try:
-                resp = self._extract_json_from_response(ai_msg.content)
+                resp = utils.extract_json_from_response(ai_msg.content)
             except Exception as e:
                 logger.opt(exception=False).warning(
                     "Failed to parse response to json", e=e.args
@@ -329,14 +137,14 @@ class LLMGenerator:
                 resp = ai_msg.content
             return resp, None
         elif task == "pdf_analysis":
-            pdf_text = await self._process_pdf(input1_path)
+            pdf_text = await utils.get_pdf_content(input1_path)
             messages = self.prompt_handler.get_messages(task, pdf_text)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "hr_pdf_comparison":
-            pdf_text1 = await self._process_pdf(input1_path)
-            pdf_text2 = await self._process_pdf(input2_path)
+            pdf_text1 = await utils.get_pdf_content(input1_path)
+            pdf_text2 = await utils.get_pdf_content(input2_path)
             messages = self.prompt_handler.get_messages(
                 task, f"CV 1:\n{pdf_text1}\n\CV 2:\n{pdf_text2}"
             )
@@ -344,7 +152,7 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "hr_pdf_zip_comparison":
-            results = await self._process_zip_pdfs(input1_path)
+            results = await self._process_zip_file(input1_path, "pdf")
 
             human_message = ""
             c = 1
@@ -360,7 +168,7 @@ class LLMGenerator:
         elif task == "hr_pdf_zip_compare_and_match":
             job_description = input_params["job_description"]
 
-            results = await self._process_zip_pdfs(input1_path)
+            results = await self._process_zip_file(input1_path, "pdf")
             human_message = ""
             c = 1
             for filename, content in results.items():
@@ -383,7 +191,7 @@ class LLMGenerator:
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             try:
-                resp = self._extract_json_from_response(ai_msg.content)
+                resp = utils.extract_json_from_response(ai_msg.content)
             except Exception as e:
                 logger.opt(exception=False).warning(
                     "Failed to parse response to json", e=e.args
@@ -400,16 +208,17 @@ class LLMGenerator:
             self.cv_generator.create_pdf_cv(cv_content, output_path)
             return None, output_path
         elif task == "chat":
+            # TODO: handle single image
+            # TODO: handle pdf
             prompt = input_params["prompt"]
             messages = self.prompt_handler.get_messages(task, prompt)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "painting_analysis":
-            if model is None:
-                self._set_model(config.MODEL_MULTIMODAL_ID)
+            # TODO: handle single image
             lang = input_params["lang"]
-            results = await self._process_zip_images(input1_path)
+            results = await self._process_zip_file(input1_path, "image")
             human_message = []
             for filename, content in results.items():
                 human_message.append(
@@ -447,13 +256,10 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "ocr":
-            if model is None:
-                self._set_model(config.MODEL_MULTIMODAL_ID)
-            filetype = await self._get_file_type(input1_path)
+            filetype = utils.get_file_type(input1_path)
             human_message = []
             if filetype == "image":
-                with open(input1_path, "rb") as image_file:
-                    content = base64.b64encode(image_file.read()).decode("utf-8")
+                content = await utils.img_to_b64(input1_path)
                 human_message.append(
                     {
                         "type": "image_url",
@@ -473,13 +279,10 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "ocr_json":
-            if model is None:
-                self._set_model(config.MODEL_MULTIMODAL_ID)
-            filetype = await self._get_file_type(input1_path)
+            filetype = utils.get_file_type(input1_path)
             human_message = []
             if filetype == "image":
-                with open(input1_path, "rb") as image_file:
-                    content = base64.b64encode(image_file.read()).decode("utf-8")
+                content = await utils.img_to_b64(input1_path)
                 human_message.append(
                     {
                         "type": "image_url",
@@ -499,4 +302,4 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         else:
-            raise ValueError(f"task {task} is not supported")
+            raise ValueError(f"Task {task} is not supported")

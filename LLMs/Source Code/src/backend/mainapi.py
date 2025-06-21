@@ -506,7 +506,7 @@ async def chat(
     response = crud.add_request(
         db=db,
         request_id=request_id,
-        task="cv_generate",
+        task="chat",
         input_params=json.dumps(
             items.model_dump(exclude={"request_id", "priority", "model"})
         ).encode(),
