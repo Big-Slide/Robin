@@ -29,7 +29,10 @@ def set_inprogress(db: Session, request_id: str) -> bool:
     headers = {"Accept": "*/*"}
     response = requests.put(url, params=params, headers=headers)
     crud.set_webhook_result(
-        db=db, request_id=request_id, webhook_status_code=response.status_code
+        db=db,
+        request_id=request_id,
+        webhook_status_code=response.status_code,
+        increase_retry=False,
     )
     # response.raise_for_status()
     if response.status_code == 200:
