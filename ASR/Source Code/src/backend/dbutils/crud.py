@@ -72,17 +72,20 @@ def update_request(
         return False
 
 
-def set_webhook_result(db: Session, request_id: str, webhook_status_code: int) -> bool:
+def set_webhook_result(
+    db: Session, request_id: str, webhook_status_code: int, increase_retry: bool = True
+) -> bool:
     item = (
         db.query(models.Manager).filter(models.Manager.request_id == request_id).first()
     )
     if item is None:
         return False
     item.utime = datetime.now(tz=None)
-    if item.webhook_retry_count is None:
-        item.webhook_retry_count = 0
-    else:
-        item.webhook_retry_count += 1
+    if increase_retry:
+        if item.webhook_retry_count is None:
+            item.webhook_retry_count = 0
+        else:
+            item.webhook_retry_count += 1
     item.webhook_status_code = webhook_status_code
     try:
         db.commit()
