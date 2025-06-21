@@ -34,7 +34,6 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                         webhook_handler.set_inprogress(
                             db=db,
                             request_id=request_id,
-                            result_data=result_data,
                         )
                     elif status == "completed":
                         webhook_handler.set_completed(
