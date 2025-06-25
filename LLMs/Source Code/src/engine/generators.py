@@ -208,10 +208,36 @@ class LLMGenerator:
             self.cv_generator.create_pdf_cv(cv_content, output_path)
             return None, output_path
         elif task == "chat":
-            # TODO: handle single image
-            # TODO: handle pdf
             prompt = input_params["prompt"]
             messages = self.prompt_handler.get_messages(task, prompt)
+            ai_msg = self.llm.invoke(messages)
+            logger.debug(f"ai response content: {ai_msg.content}")
+            return ai_msg.content, None
+        elif task == "chat_multimodal":
+            # TODO: handle more file types
+            # TODO: handle txt
+            human_message = []
+            file_type = utils.get_file_type(input1_path)
+            _, file_content = await self.__process_single_file(
+                input1_path.split("/")[-1], input1_path
+            )
+            if file_type == "image":
+                human_message.append(
+                    {
+                        "type": "image_url",
+                        "image_url": f"data:image/jpeg;base64,{file_content}",
+                    }
+                )
+            elif file_type == "pdf":
+                # TODO: handle pdf
+                raise ValueError("This filetype is not supported yet")
+            human_message.append(
+                {
+                    "type": "text",
+                    "text": input_params["prompt"],
+                }
+            )
+            messages = self.prompt_handler.get_messages(task, human_message)
             ai_msg = self.llm.invoke(messages)
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
