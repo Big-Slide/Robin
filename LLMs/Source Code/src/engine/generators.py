@@ -218,7 +218,7 @@ class LLMGenerator:
             # TODO: handle txt
             human_message = []
             file_type = utils.get_file_type(input1_path)
-            _, file_content = self.__process_single_file(
+            _, file_content = await self.__process_single_file(
                 input1_path.split("/")[-1], input1_path
             )
             if file_type == "image":
