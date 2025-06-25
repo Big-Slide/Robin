@@ -3,6 +3,7 @@ import aio_pika
 import json
 from loguru import logger
 import os
+from datetime import datetime
 
 if os.environ.get("MODE", "dev") == "prod":
     output_dir = "/approot/data/result"
@@ -36,10 +37,21 @@ async def process_message(
                 input_params=input_params,
                 model=model,
             )
-            # TODO: mark task as in progress
+            # Mark task as in progress
+            result = {"request_id": request_id, "status": "in_progress"}
+            await result_channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=json.dumps(result).encode(), headers={"request_id": request_id}
+                ),
+                routing_key="result_queue",
+            )
+
             output_path = None
-            if input_params:
-                output_path = f"{output_dir}/{request_id}.pdf"
+            # TODO: delete after 7 days
+            if task == "cv_generate":
+                current_day = datetime.now().strftime("%Y-%m/%d")
+                os.makedirs(f"{output_dir}/{current_day}", exist_ok=True)
+                output_path = f"{output_dir}/{current_day}/{request_id}.pdf"
 
             result_data, result_path = await llm_generator.process_task(
                 task, input1_path, input2_path, input_params, output_path, model=model
