@@ -64,7 +64,7 @@ services:
     depends_on:
       - queue
       - core
-    image: robin-llm-engine:0.0.2
+    image: robin-llm-engine:0.0.3
     networks:
       robinnet: null
   backend:

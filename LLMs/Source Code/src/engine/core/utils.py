@@ -6,6 +6,7 @@ import re
 import base64
 import PyPDF2
 import mimetypes
+import fitz
 
 
 async def get_pdf_content(filepath: str) -> str:
@@ -20,6 +21,20 @@ async def get_pdf_content(filepath: str) -> str:
 async def img_to_b64(filepath: str) -> str:
     with open(filepath, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
+
+
+def pdf_to_images(pdf_path):
+    doc = fitz.open(pdf_path)
+    images = []
+
+    for page_num in range(doc.page_count):
+        page = doc[page_num]
+        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom
+        img_data = pix.tobytes("png")
+        img_b64 = base64.b64encode(img_data).decode()
+        images.append(f"data:image/png;base64,{img_b64}")
+
+    return images
 
 
 def extract_json_from_response(response_text: str):
@@ -160,13 +175,17 @@ def add_file_to_message(human_message: List, file_path: str, file_content_bytes)
         )
 
     elif file_extension in [".pdf"]:
-        # PDFs - use document format
-        human_message.append(
-            {
-                "type": "document",
-                "document": {"format": "pdf", "data": file_content_b64},
-            }
-        )
+        # PDFs
+        pdf_images = pdf_to_images("document.pdf")
+        for img_b64 in pdf_images:
+            human_message.append({"type": "image_url", "image_url": img_b64})
+        # # PDFs - use document format
+        # human_message.append(
+        #     {
+        #         "type": "document",
+        #         "document": {"format": "pdf", "data": file_content_b64},
+        #     }
+        # )
 
     elif file_extension in [
         ".txt",

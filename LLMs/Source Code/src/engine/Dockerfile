@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 docker.arvancloud.ir/python:3.10-slim-bookworm
+FROM docker.arvancloud.ir/python:3.10-slim-bookworm
 
 ENV LANG C.UTF-8
 ARG PIP_TIMEOUT=500
