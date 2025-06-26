@@ -1,7 +1,7 @@
 from loguru import logger
 from config.config_handler import config
 from langchain_ollama import ChatOllama
-from typing import Union, Dict
+from typing import Union, Dict, List
 from core.cv_generator import CVGenerator
 import zipfile
 import tempfile
@@ -110,6 +110,26 @@ class LLMGenerator:
             logger.error(f"Error processing {filename}: {e}")
             return filename, ""
 
+    async def process_uploaded_file(self, human_message: List, file_path: str):
+        """
+        Example usage of the file handler
+        """
+        try:
+            with open(file_path, "rb") as f:
+                file_content_bytes = f.read()
+
+            utils.add_file_to_message(human_message, file_path, file_content_bytes)
+
+        except Exception as e:
+            logger.error(f"Error processing file {file_path}: {e}")
+            # Add error message to conversation
+            human_message.append(
+                {
+                    "type": "text",
+                    "text": f"Error: Could not process uploaded file. {str(e)}",
+                }
+            )
+
     async def process_task(
         self,
         task: str,
@@ -214,23 +234,8 @@ class LLMGenerator:
             logger.debug(f"ai response content: {ai_msg.content}")
             return ai_msg.content, None
         elif task == "chat_multimodal":
-            # TODO: handle more file types
-            # TODO: handle txt
             human_message = []
-            file_type = utils.get_file_type(input1_path)
-            _, file_content = await self.__process_single_file(
-                input1_path.split("/")[-1], input1_path
-            )
-            if file_type == "image":
-                human_message.append(
-                    {
-                        "type": "image_url",
-                        "image_url": f"data:image/jpeg;base64,{file_content}",
-                    }
-                )
-            elif file_type == "pdf":
-                # TODO: handle pdf
-                raise ValueError("This filetype is not supported yet")
+            await self.process_uploaded_file(human_message, input1_path)
             human_message.append(
                 {
                     "type": "text",
