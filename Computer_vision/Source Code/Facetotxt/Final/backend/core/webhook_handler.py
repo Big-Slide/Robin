@@ -24,11 +24,17 @@ def get_file(db: Session, request_id: str):
         return open(task.result, "rb")
 
 
-def set_inprogress(request_id: str) -> bool:
+def set_inprogress(db: Session, request_id: str) -> bool:
     url = base_url + f"/{request_id}"
     params = {"status": WebhookStatus.in_progress.value, "output": "{}"}
     headers = {"Accept": "*/*"}
     response = requests.put(url, params=params, headers=headers)
+    crud.set_webhook_result(
+        db=db,
+        request_id=request_id,
+        webhook_status_code=response.status_code,
+        increase_retry=False,
+    )
     # response.raise_for_status()
     if response.status_code == 200:
         logger.info(
