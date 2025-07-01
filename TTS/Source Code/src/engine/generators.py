@@ -46,7 +46,7 @@ class TTSGenerator:
     def __init__(self):
         self.load_models(config.MODEL_IDs.split(","))
         self._default_model_ids = {
-            "fa": "male1-online-fa",
+            "fa": "female1-fa",  # "male1-online-fa",
             "en": "female1-en",
             "ar": "male1-ar",
         }
