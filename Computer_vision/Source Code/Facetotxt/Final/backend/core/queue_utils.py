@@ -28,14 +28,13 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                         result=result.get("results"),
                         error=result.get("error"),
                     )
-                    # TODO: handle in progress state
-                    # TODO: handle retry and status_code in db
+
                     if status == "in_progress":
                         webhook_handler.set_inprogress(db=db, request_id=request_id)
                     elif status == "completed":
                         webhook_handler.set_completed(db=db, request_id=request_id)
                     elif status == "failed":
-                        webhook_handler.set_failed(db=db,request_id=request_id)
+                        webhook_handler.set_failed(db=db, request_id=request_id)
                 except Exception as e:
                     logger.exception(e)
 
