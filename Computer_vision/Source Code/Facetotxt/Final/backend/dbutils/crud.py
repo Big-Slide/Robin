@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
 from dbutils import models
 from loguru import logger
-from core.messages import Message  # Fixed import
-from datetime import datetime
+from core.messages import Message
+from datetime import datetime, timedelta
 from dbutils.schemas import WebhookStatus
 from typing import Dict
 from sqlalchemy.exc import IntegrityError
-
+from core import utils
 
 
 def clear_database(db: Session):
@@ -39,7 +39,7 @@ def add_request(db: Session, **kwargs):
         return Message("en").INF_SUCCESS()
     except IntegrityError as e:
         if "UNIQUE constraint failed: facetotxt_manager.request_id" in str(e.args):
-            msg = Message("fa").ERR_DUPLICATE_REQUEST_ID()
+            msg = Message("en").ERR_DUPLICATE_REQUEST_ID()
             return msg
         else:
             logger.opt(exception=True).error("Failed to add_request")
@@ -69,4 +69,27 @@ def update_request(
         return True
     except Exception:
         logger.opt(exception=True, colors=True).error("Failed to update_request")
+        return False
+
+
+def set_webhook_result(
+    db: Session, request_id: str, webhook_status_code: int, increase_retry: bool = True
+) -> bool:
+    item = (
+        db.query(models.Manager).filter(models.Manager.request_id == request_id).first()
+    )
+    if item is None:
+        return False
+    item.utime = datetime.now(tz=None)
+    if increase_retry:
+        if item.webhook_retry_count is None:
+            item.webhook_retry_count = 0
+        else:
+            item.webhook_retry_count += 1
+    item.webhook_status_code = webhook_status_code
+    try:
+        db.commit()
+        return True
+    except Exception:
+        logger.opt(exception=True, colors=True).error("Failed to set_webhook_result")
         return False
