@@ -38,7 +38,7 @@ def add_request(db: Session, **kwargs):
         db.commit()
         return Message("en").INF_SUCCESS()
     except IntegrityError as e:
-        if "UNIQUE constraint failed: manager.request_id" in str(e.args):
+        if "UNIQUE constraint failed: general_ocr_manager.request_id" in str(e.args):
             msg = Message("en").ERR_DUPLICATE_REQUEST_ID()
             return msg
         else:

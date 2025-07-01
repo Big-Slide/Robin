@@ -50,7 +50,7 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                     elif status == "completed":
                         webhook_handler.set_completed(request_id=request_id, db=db)
                     elif status == "failed":
-                        webhook_handler.set_failed(request_id=request_id)
+                        webhook_handler.set_failed(db=db, request_id=request_id)
 
                 except Exception as e:
                     logger.exception(f"Error processing result message: {e}")
