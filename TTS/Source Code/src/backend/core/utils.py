@@ -9,3 +9,9 @@ def generate_uuid():
 def delete_file(filepath: str):
     if os.path.exists(filepath):
         os.remove(filepath)
+
+
+def validate_text(text: str):
+    if len(text) > 1024:
+        return False
+    return True
