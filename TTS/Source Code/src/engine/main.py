@@ -32,7 +32,7 @@ logger.add(
     level=config["FILE_LOG_LEVEL"],
     backtrace=True,
     diagnose=False,
-    colorize=True,
+    colorize=False,
     serialize=False,
     enqueue=True,
 )
