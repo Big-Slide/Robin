@@ -25,13 +25,7 @@ async def process_message(
             request_id = message_body["request_id"]
             lang = message_body.get("lang", None)
 
-            logger.info(
-                "Processing task",
-                request_id=request_id,
-                model=model,
-                text=text,
-                lang=lang,
-            )
+            logger.info("Processing task", request_id=request_id)
             result = {
                 "request_id": request_id,
                 "status": "in_progress",

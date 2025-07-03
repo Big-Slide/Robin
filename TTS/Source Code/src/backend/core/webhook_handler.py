@@ -36,7 +36,7 @@ def set_inprogress(db: Session, request_id: str) -> bool:
     )
     # response.raise_for_status()
     if response.status_code == 200:
-        logger.info(
+        logger.debug(
             "Webhook-set_inprogress",
             status_code=response.status_code,
             # content=response.content,
