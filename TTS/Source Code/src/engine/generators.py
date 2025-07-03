@@ -106,6 +106,7 @@ class TTSGenerator:
                 self._synthesizers[model_id]["vocoder"] = (
                     SpeechT5HifiGan.from_pretrained(models[model_id]["vocoder_dir"])
                 )
+                logger.info("Model loaded", model_id=model_id)
 
     async def do_tts(
         self, text: str, tmp_path: str, model_id: str = None, lang: str = "fa"
