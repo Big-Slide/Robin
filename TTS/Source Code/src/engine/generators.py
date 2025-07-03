@@ -46,7 +46,7 @@ class TTSGenerator:
     def __init__(self):
         self.load_models(config.MODEL_IDs.split(","))
         self._default_model_ids = {
-            "fa": "female1-fa",  # "male1-online-fa",
+            "fa": "male1-online-fa",
             "en": "female1-en",
             "ar": "male1-ar",
         }
@@ -78,6 +78,7 @@ class TTSGenerator:
                 else:
                     logger.warning(
                         "Config or model not found",
+                        model_id=model_id,
                         config_path=config_path,
                         model_path=model_path,
                     )
@@ -105,6 +106,7 @@ class TTSGenerator:
                 self._synthesizers[model_id]["vocoder"] = (
                     SpeechT5HifiGan.from_pretrained(models[model_id]["vocoder_dir"])
                 )
+                logger.info("Model loaded", model_id=model_id)
 
     async def do_tts(
         self, text: str, tmp_path: str, model_id: str = None, lang: str = "fa"
@@ -114,11 +116,18 @@ class TTSGenerator:
         if model_id is None:
             model_id = self._default_model_ids[lang]
         if model_id == "male1-online-fa":
-            voice = "fa-IR-FaridNeural"
-            communicate = edge_tts.Communicate(text, voice)
-            communicate.save_sync(tmp_path)
+            try:
+                voice = "fa-IR-FaridNeural"
+                communicate = edge_tts.Communicate(text, voice)
+                communicate.save_sync(tmp_path)
+                return
+            except Exception:
+                logger.opt(exception=True).warning(
+                    "male1-online-fa not worked: using female1-fa instead"
+                )
+                model_id = "female1-fa"
             # return FileResponse(path=tmp_path, media_type="audio/wav")
-        elif model_id in ["female1-fa", "male1-fa"]:
+        if model_id in ["female1-fa", "male1-fa"]:
             wavs = self._synthesizers[model_id].tts(text)
             self._synthesizers[model_id].save_wav(wavs, tmp_path)
             # return FileResponse(path=tmp_path, media_type="audio/wav")

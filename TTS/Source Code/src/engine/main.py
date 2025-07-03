@@ -3,6 +3,10 @@ from loguru import logger
 from version import __version__
 from config.config_handler import config
 import sys
+from generators import TTSGenerator
+import aio_pika
+import asyncio
+from core.queue_utils import process_message
 
 if os.environ.get("MODE", "dev") == "prod":
     log_dir = "/approot/data"
@@ -28,17 +32,12 @@ logger.add(
     level=config["FILE_LOG_LEVEL"],
     backtrace=True,
     diagnose=False,
-    colorize=True,
+    colorize=False,
     serialize=False,
     enqueue=True,
 )
 
 logger.info("Starting service...", version=__version__)
-
-from generators import TTSGenerator
-import aio_pika
-import asyncio
-from core.queue_utils import process_message
 
 
 async def main():
