@@ -1,4 +1,4 @@
 CONSOLE_LOG_LEVEL: INFO
 FILE_LOG_LEVEL: INFO
 QUEUE_CONNECTION: amqp://guest:guest@localhost/
-MODEL_IDs: male1-fa,female1-fa,female1-en,male1-ar
+MODEL_IDs: male1-fa,female1-fa,male2-fa,female1-en,male1-ar

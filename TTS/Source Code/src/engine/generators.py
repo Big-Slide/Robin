@@ -31,6 +31,12 @@ models = {
         "lang": "fa",
         "type": "TTS",
     },
+    "male2-fa": {  # ?
+        "model_path": f"{models_dir}/SmartGiticorp/persian_tts_vits/best_model.pth",
+        "config_path": f"{models_dir}/SmartGiticorp/persian_tts_vits/config.json",
+        "lang": "fa",
+        "type": "TTS",
+    },
     "female1-en": {"lang": "en", "type": "kokoro"},
     "male1-ar": {
         "model_dir": f"{models_dir}/MBZUAI/speecht5_tts_clartts_ar",
@@ -127,7 +133,7 @@ class TTSGenerator:
                 )
                 model_id = "female1-fa"
             # return FileResponse(path=tmp_path, media_type="audio/wav")
-        if model_id in ["female1-fa", "male1-fa"]:
+        if model_id in ["female1-fa", "male1-fa", "male2-fa"]:
             wavs = self._synthesizers[model_id].tts(text)
             self._synthesizers[model_id].save_wav(wavs, tmp_path)
             # return FileResponse(path=tmp_path, media_type="audio/wav")
