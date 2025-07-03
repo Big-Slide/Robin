@@ -78,6 +78,7 @@ class TTSGenerator:
                 else:
                     logger.warning(
                         "Config or model not found",
+                        model_id=model_id,
                         config_path=config_path,
                         model_path=model_path,
                     )
