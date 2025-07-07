@@ -5,6 +5,7 @@ from config.config_handler import config
 from loguru import logger
 import json
 from sqlalchemy.orm import Session
+import io
 
 
 base_url = f"{config['AIHIVE_ADDR']}/api/Request"
@@ -35,7 +36,7 @@ def set_inprogress(db: Session, request_id: str) -> bool:
     )
     # response.raise_for_status()
     if response.status_code == 200:
-        logger.info(
+        logger.debug(
             "Webhook-set_inprogress",
             status_code=response.status_code,
         )
@@ -49,13 +50,19 @@ def set_inprogress(db: Session, request_id: str) -> bool:
         return False
 
 
-def set_completed(db: Session, request_id: str, result_data: str = None) -> bool:
+def set_completed(
+    db: Session, request_id: str, result_data: str = None, max_param_size: int = 1000
+) -> bool:
     url = base_url + f"/{request_id}"
     headers = {"Accept": "*/*"}
     if result_data:
-        result = {"result": result_data}
-        params = {"status": WebhookStatus.completed.value, "output": json.dumps(result)}
-        response = requests.put(url, params=params, headers=headers)
+        # TODO: use max_param_size (check with Dr. Fathi)
+        # Always send as file when result_data is provided
+        result_json = json.dumps({"result": result_data})
+        file_obj = io.BytesIO(result_json.encode("utf-8"))
+        params = {"status": WebhookStatus.completed.value}
+        files = {"outputFile": ("result.json", file_obj, "application/json")}
+        response = requests.put(url, params=params, headers=headers, files=files)
     else:
         params = {"status": WebhookStatus.completed.value, "output": "{}"}
         response = requests.put(
