@@ -31,7 +31,7 @@ models = {
         "lang": "fa",
         "type": "TTS",
     },
-    "male2-fa": {  # ?
+    "male2-fa": {  # Bad
         "model_path": f"{models_dir}/SmartGiticorp/persian_tts_vits/best_model.pth",
         "config_path": f"{models_dir}/SmartGiticorp/persian_tts_vits/config.json",
         "lang": "fa",
