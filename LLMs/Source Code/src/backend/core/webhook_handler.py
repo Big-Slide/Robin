@@ -60,8 +60,8 @@ def set_completed(
         # Always send as file when result_data is provided
         result_json = json.dumps({"result": result_data})
         file_obj = io.BytesIO(result_json.encode("utf-8"))
-        params = {"status": WebhookStatus.completed.value}
-        files = {"outputFile": ("result.json", file_obj, "application/json")}
+        params = {"status": WebhookStatus.completed.value, "output": "{}"}
+        files = {"outputFile": ("result.txt", file_obj, "text/plain")}
         response = requests.put(url, params=params, headers=headers, files=files)
     else:
         params = {"status": WebhookStatus.completed.value, "output": "{}"}
