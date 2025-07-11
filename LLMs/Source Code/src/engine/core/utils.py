@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 import os
 import json
 import re
 import base64
 import PyPDF2
+import mimetypes
+import fitz
 
 
 async def get_pdf_content(filepath: str) -> str:
@@ -19,6 +21,20 @@ async def get_pdf_content(filepath: str) -> str:
 async def img_to_b64(filepath: str) -> str:
     with open(filepath, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
+
+
+def pdf_to_images(pdf_path):
+    doc = fitz.open(pdf_path)
+    images = []
+
+    for page_num in range(doc.page_count):
+        page = doc[page_num]
+        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom
+        img_data = pix.tobytes("png")
+        img_b64 = base64.b64encode(img_data).decode()
+        images.append(f"data:image/png;base64,{img_b64}")
+
+    return images
 
 
 def extract_json_from_response(response_text: str):
@@ -129,6 +145,156 @@ def get_file_type(filename: str) -> Optional[str]:
     }
 
     return file_types.get(extension, None)
+
+
+def add_file_to_message(human_message: List, file_path: str, file_content_bytes):
+    """
+    Add various file types to the conversation message
+
+    Args:
+        human_message: List to append the file content to
+        file_path: Path to the file (for MIME type detection)
+        file_content_bytes: Raw bytes of the file content
+    """
+
+    # Get MIME type from file extension
+    mime_type, _ = mimetypes.guess_type(file_path)
+    file_extension = Path(file_path).suffix.lower()
+
+    # Convert bytes to base64
+    file_content_b64 = base64.b64encode(file_content_bytes).decode("utf-8")
+
+    # Handle different file types
+    if mime_type and mime_type.startswith("image/"):
+        # Images - use image_url format
+        human_message.append(
+            {
+                "type": "image_url",
+                "image_url": f"data:{mime_type};base64,{file_content_b64}",
+            }
+        )
+
+    elif file_extension in [".pdf"]:
+        # PDFs
+        pdf_images = pdf_to_images("document.pdf")
+        for img_b64 in pdf_images:
+            human_message.append({"type": "image_url", "image_url": img_b64})
+        # # PDFs - use document format
+        # human_message.append(
+        #     {
+        #         "type": "document",
+        #         "document": {"format": "pdf", "data": file_content_b64},
+        #     }
+        # )
+
+    elif file_extension in [
+        ".txt",
+        ".md",
+        ".py",
+        ".js",
+        ".html",
+        ".css",
+        ".json",
+        ".xml",
+        ".yaml",
+        ".yml",
+    ]:
+        # Text-based files - decode and include as text
+        try:
+            text_content = file_content_bytes.decode("utf-8")
+            human_message.append(
+                {
+                    "type": "text",
+                    "text": f"File: {Path(file_path).name}\n```{file_extension[1:]}\n{text_content}\n```",
+                }
+            )
+        except UnicodeDecodeError:
+            # If text decoding fails, treat as binary
+            human_message.append(
+                {
+                    "type": "document",
+                    "document": {
+                        "format": "binary",
+                        "name": Path(file_path).name,
+                        "data": file_content_b64,
+                    },
+                }
+            )
+
+    elif file_extension in [".csv"]:
+        # CSV files - include as text with special formatting
+        try:
+            csv_content = file_content_bytes.decode("utf-8")
+            human_message.append(
+                {
+                    "type": "text",
+                    "text": f"CSV File: {Path(file_path).name}\n```csv\n{csv_content}\n```",
+                }
+            )
+        except UnicodeDecodeError:
+            human_message.append(
+                {
+                    "type": "document",
+                    "document": {
+                        "format": "csv",
+                        "name": Path(file_path).name,
+                        "data": file_content_b64,
+                    },
+                }
+            )
+
+    elif file_extension in [".xlsx", ".xls"]:
+        # Excel files
+        human_message.append(
+            {
+                "type": "document",
+                "document": {
+                    "format": "excel",
+                    "name": Path(file_path).name,
+                    "data": file_content_b64,
+                },
+            }
+        )
+
+    elif file_extension in [".docx", ".doc"]:
+        # Word documents
+        human_message.append(
+            {
+                "type": "document",
+                "document": {
+                    "format": "word",
+                    "name": Path(file_path).name,
+                    "data": file_content_b64,
+                },
+            }
+        )
+
+    elif file_extension in [".pptx", ".ppt"]:
+        # PowerPoint presentations
+        human_message.append(
+            {
+                "type": "document",
+                "document": {
+                    "format": "powerpoint",
+                    "name": Path(file_path).name,
+                    "data": file_content_b64,
+                },
+            }
+        )
+
+    else:
+        # Generic file handling
+        human_message.append(
+            {
+                "type": "document",
+                "document": {
+                    "format": "binary",
+                    "name": Path(file_path).name,
+                    "mime_type": mime_type,
+                    "data": file_content_b64,
+                },
+            }
+        )
 
 
 def delete_file(filepath: str):
