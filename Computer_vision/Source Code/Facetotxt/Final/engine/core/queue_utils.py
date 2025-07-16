@@ -96,6 +96,16 @@ async def process_message(
                 ),
                 routing_key="facial_expression_result_queue",
             )
+            result = {
+                "request_id": request_id,
+                "status": "in_progress",
+            }
+            await result_channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=json.dumps(result).encode(), headers={"request_id": request_id}
+                ),
+                routing_key="facial_expression_result_queue",
+            )
 
             # Process the image
             results = await process_image(encoded_image)
