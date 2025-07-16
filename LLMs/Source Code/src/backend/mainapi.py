@@ -355,7 +355,6 @@ async def hr_pdf_zip_compare_and_match(
     with open(input1_path, "wb") as f:
         f.write(await file.read())
 
-    # TODO: add input_params to db
     response = crud.add_request(
         db=db,
         request_id=request_id,
@@ -507,7 +506,7 @@ async def chat(
     response = crud.add_request(
         db=db,
         request_id=request_id,
-        task="chat",
+        task="cv_generate",
         input_params=json.dumps(
             items.model_dump(exclude={"request_id", "priority", "model"})
         ).encode(),
@@ -523,62 +522,6 @@ async def chat(
         "input_params": items.model_dump(exclude={"request_id", "priority", "model"}),
         "request_id": request_id,
         "model": items.model,
-    }
-
-    await channel.default_exchange.publish(
-        aio_pika.Message(
-            body=json.dumps(message_body).encode(),
-            headers={"request_id": request_id},
-        ),
-        routing_key="task_queue",
-    )
-    await channel.close()
-
-    msg = Message("en").INF_SUCCESS()
-    msg["data"] = {"request_id": request_id}
-    return msg
-
-
-@app.post("/aihive-llm/api/v1/chat/multimodal-to-txt-offline", tags=["Chat"])
-async def chat_multimodal(
-    prompt: str,
-    file: UploadFile,
-    request_id: str = None,
-    priority: int = 1,
-    model: str = None,
-    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
-    db: Session = Depends(base.get_db),
-):
-    logger.info("request chat_multimodal", request_id=request_id)
-    if request_id is None:
-        request_id = str(uuid.uuid4())
-
-    # Save uploaded file
-    current_day = datetime.now().strftime("%Y-%m/%d")
-    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
-    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
-    with open(input1_path, "wb") as f:
-        f.write(await file.read())
-
-    response = crud.add_request(
-        db=db,
-        request_id=request_id,
-        task="chat_multimodal",
-        input_params=json.dumps({"prompt": prompt}).encode(),
-        input1_path=input1_path,
-        itime=datetime.now(tz=None),
-    )
-    if not response["status"]:
-        return response
-
-    channel = await connection.channel()
-
-    message_body = {
-        "task": "chat_multimodal",
-        "input1_path": input1_path,
-        "input_params": {"prompt": prompt},
-        "request_id": request_id,
-        "model": model,
     }
 
     await channel.default_exchange.publish(
@@ -637,141 +580,6 @@ async def painting_analysis(
         "task": "painting_analysis",
         "input1_path": input1_path,
         "input_params": {"lang": lang},
-        "request_id": request_id,
-        "model": model,
-    }
-
-    await channel.default_exchange.publish(
-        aio_pika.Message(
-            body=json.dumps(message_body).encode(),
-            headers={"request_id": request_id},
-        ),
-        routing_key="task_queue",
-    )
-    await channel.close()
-
-    msg = Message("en").INF_SUCCESS()
-    msg["data"] = {"request_id": request_id}
-    return msg
-
-
-@app.post("/aihive-llm/api/v1/ocr/any-to-txt-offline", tags=["OCR"])
-async def ocr(
-    file: UploadFile,
-    request_id: str = None,
-    priority: int = 1,
-    model: str = None,
-    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
-    db: Session = Depends(base.get_db),
-):
-    logger.info("request ocr", request_id=request_id, model=model)
-    if request_id is None:
-        request_id = str(uuid.uuid4())
-
-    # Save uploaded file
-    current_day = datetime.now().strftime("%Y-%m/%d")
-    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
-    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
-    with open(input1_path, "wb") as f:
-        f.write(await file.read())
-
-    response = crud.add_request(
-        db=db,
-        request_id=request_id,
-        model=model,
-        task="ocr",
-        input1_path=input1_path,
-        itime=datetime.now(tz=None),
-    )
-    if not response["status"]:
-        if os.path.exists(input1_path):
-            os.remove(input1_path)
-        return response
-
-    channel = await connection.channel()
-
-    # TODO: change input_path to binary data
-    message_body = {
-        "task": "ocr",
-        "input1_path": input1_path,
-        "input2_path": None,
-        "request_id": request_id,
-        "model": model,
-    }
-
-    await channel.default_exchange.publish(
-        aio_pika.Message(
-            body=json.dumps(message_body).encode(),
-            headers={"request_id": request_id},
-        ),
-        routing_key="task_queue",
-    )
-    await channel.close()
-
-    msg = Message("en").INF_SUCCESS()
-    msg["data"] = {"request_id": request_id}
-    return msg
-
-
-@app.post("/aihive-llm/api/v1/ocr/any-to-json-offline", tags=["OCR"])
-async def ocr_json(
-    file: UploadFile,
-    request_id: str = None,
-    priority: int = 1,
-    model: str = None,
-    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
-    db: Session = Depends(base.get_db),
-):
-    """
-    Extracting text as json format from any filetype. Now supporting images only.
-
-    {
-        "detected_languages": ["language1", "language2"],
-        "extracted_text": "The complete extracted text maintaining original structure and formatting",
-        "confidence_score": 0.95,
-        "text_blocks": [
-            {
-            "text": "Individual text block content",
-            "language": "detected_language",
-            "position": "top-left|center|bottom-right",
-            "confidence": 0.98
-            }
-        ],
-        "formatting_notes": "Any relevant observations about text structure, tables, or special formatting",
-        "extraction_challenges": "Notes about unclear text, image quality issues, or recognition difficulties"
-    }
-    """
-    logger.info("request ocr_json", request_id=request_id, model=model)
-    if request_id is None:
-        request_id = str(uuid.uuid4())
-
-    # Save uploaded file
-    current_day = datetime.now().strftime("%Y-%m/%d")
-    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
-    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
-    with open(input1_path, "wb") as f:
-        f.write(await file.read())
-
-    response = crud.add_request(
-        db=db,
-        request_id=request_id,
-        model=model,
-        task="ocr_json",
-        input1_path=input1_path,
-        itime=datetime.now(tz=None),
-    )
-    if not response["status"]:
-        if os.path.exists(input1_path):
-            os.remove(input1_path)
-        return response
-
-    channel = await connection.channel()
-
-    # TODO: change input_path to binary data
-    message_body = {
-        "task": "ocr_json",
-        "input1_path": input1_path,
-        "input2_path": None,
         "request_id": request_id,
         "model": model,
     }

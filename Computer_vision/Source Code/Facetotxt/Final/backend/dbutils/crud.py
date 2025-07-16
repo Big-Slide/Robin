@@ -2,11 +2,10 @@ from sqlalchemy.orm import Session
 from dbutils import models
 from loguru import logger
 from core.messages import Message
-from datetime import datetime, timedelta
+from datetime import datetime
 from dbutils.schemas import WebhookStatus
 from typing import Dict
 from sqlalchemy.exc import IntegrityError
-from core import utils
 
 
 def clear_database(db: Session):

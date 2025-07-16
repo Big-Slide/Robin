@@ -20,7 +20,7 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                 try:
                     result = json.loads(message.body.decode())
                     request_id = result["request_id"]
-
+                    status = result["status"]
                     logger.info(f"Processing result for request_id: {request_id}, status: {result['status']}")
 
                     # Map status string to WebhookStatus enum
@@ -47,15 +47,13 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                         continue
 
                     # Call appropriate webhook based on status
-                    if status == WebhookStatus.in_progress:
-                        webhook_success = webhook_handler.set_inprogress(request_id=request_id)
-                        logger.info(
-                            f"In-progress webhook for {request_id}: {'Success' if webhook_success else 'Failed'}")
-                    elif status == WebhookStatus.completed:
+                    if status == "in_progress":
+                        webhook_handler.set_inprogress(db=db, request_id=request_id)
+                    elif status == "completed":
                         webhook_success = webhook_handler.set_completed(request_id=request_id, db=db)
                         logger.info(f"Completed webhook for {request_id}: {'Success' if webhook_success else 'Failed'}")
-                    elif status == WebhookStatus.failed:
-                        webhook_success = webhook_handler.set_failed(request_id=request_id)
+                    elif status == "failed":
+                        webhook_success = webhook_handler.set_failed(db=db, request_id=request_id)
                         logger.info(f"Failed webhook for {request_id}: {'Success' if webhook_success else 'Failed'}")
 
                 except Exception as e:

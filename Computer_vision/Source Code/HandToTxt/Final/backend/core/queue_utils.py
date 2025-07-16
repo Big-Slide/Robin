@@ -21,6 +21,7 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
             async with message.process():
                 try:
                     result = json.loads(message.body.decode())
+                    status = result["status"]
                     request_id = result["request_id"]
 
                     # Map status string to enum
@@ -44,10 +45,12 @@ async def consume_results(connection: aio_pika.RobustConnection, db: Session):
                     )
 
                     # Update webhook status
-                    if status == WebhookStatus.completed:
+                    if status == "in_progress":
+                        webhook_handler.set_inprogress(db=db, request_id=request_id)
+                    elif status == "completed":
                         webhook_handler.set_completed(request_id=request_id, db=db)
-                    elif status == WebhookStatus.failed:
-                        webhook_handler.set_failed(request_id=request_id)
+                    elif status == "failed":
+                        webhook_handler.set_failed(db=db, request_id=request_id)
 
                 except Exception as e:
                     logger.exception(f"Error processing result message: {e}")

@@ -2,5 +2,3 @@ edge_tts==7.0.0
 aio-pika==9.5.4
 loguru==0.7.3
 soundfile==0.13.1
-transformers==4.52.1
-sentencepiece==0.2.0

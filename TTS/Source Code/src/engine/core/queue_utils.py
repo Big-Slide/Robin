@@ -25,21 +25,16 @@ async def process_message(
             request_id = message_body["request_id"]
             lang = message_body.get("lang", None)
 
-            logger.info("Processing task", request_id=request_id)
-            result = {
-                "request_id": request_id,
-                "status": "in_progress",
-            }
-            await result_channel.default_exchange.publish(
-                aio_pika.Message(
-                    body=json.dumps(result).encode(), headers={"request_id": request_id}
-                ),
-                routing_key="result_queue",
+            logger.info(
+                "Processing task",
+                request_id=request_id,
+                model=model,
+                text=text,
+                lang=lang,
             )
-
             output_path = f"{output_dir}/{request_id}.wav"
             await tts_generator.do_tts(
-                text=text, model_id=model, tmp_path=output_path, lang=lang
+                text=text, model=model, tmp_path=output_path, lang=lang
             )
 
             result = {

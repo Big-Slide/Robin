@@ -104,7 +104,7 @@ async def process_message(
                 aio_pika.Message(
                     body=json.dumps(result).encode(), headers={"request_id": request_id}
                 ),
-                routing_key="result_queue",
+                routing_key="facial_expression_result_queue",
             )
 
             # Process the image

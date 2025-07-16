@@ -17,7 +17,7 @@ from core.queue_utils import consume_results, get_rabbitmq_connection
 from dbutils import schemas, crud
 import sys
 from starlette.middleware.cors import CORSMiddleware
-from core import base, utils
+from core import base
 from dbutils.database import SessionLocal
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -98,8 +98,6 @@ async def generate_sound(
     connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
     db: Session = Depends(base.get_db),
 ):
-    if not utils.validate_text(request.text):
-        Message("fa").ERR_INVALID_INPUT()
     logger.info("/tts/text-to-speech-offline", request=request)
     request_id = request.request_id
     if request_id is None:
