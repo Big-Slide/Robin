@@ -542,7 +542,7 @@ async def chat(
 @app.post("/aihive-llm/api/v1/chat/multimodal-to-txt-offline", tags=["Chat"])
 async def chat_multimodal(
     prompt: str,
-    file: UploadFile,
+    file: UploadFile = None,
     request_id: str = None,
     priority: int = 1,
     model: str = None,
@@ -553,12 +553,14 @@ async def chat_multimodal(
     if request_id is None:
         request_id = str(uuid.uuid4())
 
-    # Save uploaded file
-    current_day = datetime.now().strftime("%Y-%m/%d")
-    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
-    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
-    with open(input1_path, "wb") as f:
-        f.write(await file.read())
+    input1_path = None
+    if file:
+        # Save uploaded file
+        current_day = datetime.now().strftime("%Y-%m/%d")
+        os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
+        input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
+        with open(input1_path, "wb") as f:
+            f.write(await file.read())
 
     response = crud.add_request(
         db=db,

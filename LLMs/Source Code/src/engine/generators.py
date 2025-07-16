@@ -235,7 +235,8 @@ class LLMGenerator:
             return ai_msg.content, None
         elif task == "chat_multimodal":
             human_message = []
-            await self.process_uploaded_file(human_message, input1_path)
+            if input1_path:
+                await self.process_uploaded_file(human_message, input1_path)
             human_message.append(
                 {
                     "type": "text",
