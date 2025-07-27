@@ -1,5 +1,5 @@
 # Use Python 3.12.0 as base image
-FROM python:3.12.0
+FROM docker.arvancloud.ir/python:3.12.0
 
 WORKDIR /approot/src
 ENV LANG=C.UTF-8
