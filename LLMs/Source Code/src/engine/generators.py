@@ -16,6 +16,7 @@ class LLMGenerator:
         self._current_state = {}
         self.prompt_handler = PromptHandler()
         self._set_model("chat")
+        self.lang_dict = {"en": "English", "fa": "Persian", "ar": "Arabic"}
 
     def _set_model(self, task: str, model: str = None):
         params = self.prompt_handler.get_model_params(task)
@@ -259,25 +260,11 @@ class LLMGenerator:
                         "image_url": f"data:image/jpeg;base64,{content}",
                     }
                 )
-            if lang == "en":
+            if lang in self.lang_dict.keys():
                 human_message.append(
                     {
                         "type": "text",
-                        "text": "Please provide a comprehensive psychological analysis of this child's artwork. Please respond in English only",
-                    }
-                )
-            elif lang == "fa":
-                human_message.append(
-                    {
-                        "type": "text",
-                        "text": "Please provide a comprehensive psychological analysis of this child's artwork. Please respond in Persian only",
-                    }
-                )
-            elif lang == "ar":
-                human_message.append(
-                    {
-                        "type": "text",
-                        "text": "Please provide a comprehensive psychological analysis of this child's artwork. Please respond in Arabic only",
+                        "text": f"Please provide a comprehensive psychological analysis of this child's artwork. Please respond in {self.lang_dict[lang]} only",
                     }
                 )
             else:
