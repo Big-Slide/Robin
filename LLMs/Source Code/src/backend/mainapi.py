@@ -94,6 +94,9 @@ app.add_middleware(
 base_mdl = base.Base()
 
 
+#########################################################################################
+# ----------------------------------------- HR ------------------------------------------#
+#########################################################################################
 @app.post("/aihive-llm/api/v1/hrpdfanl/pdf-to-json-offline", tags=["HR"])
 async def hr_pdf_analysis(
     file: UploadFile,
@@ -132,64 +135,6 @@ async def hr_pdf_analysis(
     # TODO: change input_path to binary data
     message_body = {
         "task": "hr_pdf_analysis",
-        "input1_path": input1_path,
-        "input2_path": None,
-        "request_id": request_id,
-        "model": model,
-    }
-
-    await channel.default_exchange.publish(
-        aio_pika.Message(
-            body=json.dumps(message_body).encode(),
-            headers={"request_id": request_id},
-        ),
-        routing_key="task_queue",
-    )
-    await channel.close()
-
-    msg = Message("en").INF_SUCCESS()
-    msg["data"] = {"request_id": request_id}
-    return msg
-
-
-@app.post("/aihive-llm/api/v1/pdfanl/pdf-to-txt-offline", tags=["General"])
-async def pdf_analysis(
-    file: UploadFile,
-    request_id: str = None,
-    priority: int = 1,
-    model: str = None,
-    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
-    db: Session = Depends(base.get_db),
-):
-    logger.info("request pdf_analysis", request_id=request_id, model=model)
-    if request_id is None:
-        request_id = str(uuid.uuid4())
-
-    # Save uploaded file
-    current_day = datetime.now().strftime("%Y-%m/%d")
-    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
-    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
-    with open(input1_path, "wb") as f:
-        f.write(await file.read())
-
-    response = crud.add_request(
-        db=db,
-        request_id=request_id,
-        model=model,
-        task="pdf_analysis",
-        input1_path=input1_path,
-        itime=datetime.now(tz=None),
-    )
-    if not response["status"]:
-        if os.path.exists(input1_path):
-            os.remove(input1_path)
-        return response
-
-    channel = await connection.channel()
-
-    # TODO: change input_path to binary data
-    message_body = {
-        "task": "pdf_analysis",
         "input1_path": input1_path,
         "input2_path": None,
         "request_id": request_id,
@@ -443,6 +388,70 @@ async def hr_analysis_question(
     return msg
 
 
+#########################################################################################
+# ------------------------------------- General ----------------------------------------#
+#########################################################################################
+@app.post("/aihive-llm/api/v1/pdfanl/pdf-to-txt-offline", tags=["General"])
+async def pdf_analysis(
+    file: UploadFile,
+    request_id: str = None,
+    priority: int = 1,
+    model: str = None,
+    connection: aio_pika.RobustConnection = Depends(get_rabbitmq_connection),
+    db: Session = Depends(base.get_db),
+):
+    logger.info("request pdf_analysis", request_id=request_id, model=model)
+    if request_id is None:
+        request_id = str(uuid.uuid4())
+
+    # Save uploaded file
+    current_day = datetime.now().strftime("%Y-%m/%d")
+    os.makedirs(f"{temp_dir}/{current_day}", exist_ok=True)
+    input1_path = f"{temp_dir}/{current_day}/{request_id}_{file.filename}"
+    with open(input1_path, "wb") as f:
+        f.write(await file.read())
+
+    response = crud.add_request(
+        db=db,
+        request_id=request_id,
+        model=model,
+        task="pdf_analysis",
+        input1_path=input1_path,
+        itime=datetime.now(tz=None),
+    )
+    if not response["status"]:
+        if os.path.exists(input1_path):
+            os.remove(input1_path)
+        return response
+
+    channel = await connection.channel()
+
+    # TODO: change input_path to binary data
+    message_body = {
+        "task": "pdf_analysis",
+        "input1_path": input1_path,
+        "input2_path": None,
+        "request_id": request_id,
+        "model": model,
+    }
+
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=json.dumps(message_body).encode(),
+            headers={"request_id": request_id},
+        ),
+        routing_key="task_queue",
+    )
+    await channel.close()
+
+    msg = Message("en").INF_SUCCESS()
+    msg["data"] = {"request_id": request_id}
+    return msg
+
+
+#########################################################################################
+# ---------------------------------------- CV ------------------------------------------#
+#########################################################################################
 @app.post("/aihive-llm/api/v1/cvgenerate/txt-to-pdf-offline", tags=["CV"])
 async def cv_generate_offline(
     items: schemas.vm_request_cv_generator,
@@ -492,6 +501,9 @@ async def cv_generate_offline(
     return msg
 
 
+###########################################################################################
+# ---------------------------------------- Chat -------------------------------------------#
+###########################################################################################
 @app.post("/aihive-llm/api/v1/chat/txt-to-txt-offline", tags=["Chat"])
 async def chat(
     items: schemas.vm_request_chat,
@@ -597,6 +609,9 @@ async def chat_multimodal(
     return msg
 
 
+###############################################################################################
+# --------------------------------------- Psychology -----------------------------------------#
+###############################################################################################
 @app.post(
     "/aihive-llm/api/v1/painting-analysis/zip-to-txt-offline", tags=["Psychology"]
 )
@@ -657,6 +672,9 @@ async def painting_analysis(
     return msg
 
 
+###############################################################################################
+# ------------------------------------------ OCR ---------------------------------------------#
+###############################################################################################
 @app.post("/aihive-llm/api/v1/ocr/any-to-txt-offline", tags=["OCR"])
 async def ocr(
     file: UploadFile,
