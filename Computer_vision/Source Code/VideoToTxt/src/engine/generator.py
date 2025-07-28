@@ -9,11 +9,11 @@ from loguru import logger
 
 # Emotion categories - exactly as in your original code
 CATEGORIES = [
-    'Affection', 'Anger', 'Annoyance', 'Anticipation', 'Aversion', 'Confidence',
-    'Disapproval', 'Disconnection', 'Disquietment', 'Doubt/Confusion', 'Embarrassment',
-    'Engagement', 'Esteem', 'Excitement', 'Fatigue', 'Fear', 'Happiness', 'Pain',
-    'Peace', 'Pleasure', 'Sadness', 'Sensitivity', 'Suffering', 'Surprise',
-    'Sympathy', 'Yearning'
+    'affection', 'anger', 'annoyance', 'anticipation', 'aversion', 'confidence',
+    'disapproval', 'disconnection', 'disquietment', 'doubt/confusion', 'embarrassment',
+    'engagement', 'esteem', 'excitement', 'fatigue', 'fear', 'happiness', 'pain',
+    'peace', 'pleasure', 'sadness', 'sensitivity', 'suffering', 'surprise',
+    'sympathy', 'yearning'
 ]
 
 # Create mappings exactly as in your original main.py
